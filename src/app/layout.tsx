@@ -9,7 +9,7 @@ import { Navigation } from "@/src/components/navigation";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("http://localhost:3000/"),
+  metadataBase: new URL("https://artistly-799l.vercel.app/"),
   title: "Artistly - Book Professional Artists for Your Events",
   description:
     "Connect with talented singers, dancers, speakers, and DJs for your next event. Professional artist booking made simple.",
