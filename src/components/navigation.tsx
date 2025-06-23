@@ -7,6 +7,7 @@ import { Moon, Sun, Menu, X } from "lucide-react";
 import { useTheme } from "@/src/contexts/theme-context";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 
 export function Navigation() {
   const { theme, toggleTheme } = useTheme();
@@ -25,7 +26,8 @@ export function Navigation() {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center space-x-2">
-            <div className="h-8 w-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500" />
+            {/* <div className="h-8 w-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500" /> */}
+            <Image src={"/image.png"} width={30} height={30} alt="logo" />
             <span className="text-xl font-bold">Artistly</span>
           </Link>
 
