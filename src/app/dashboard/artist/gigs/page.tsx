@@ -5,7 +5,7 @@ import { DashboardLayout } from "@/src/components/dashboard/dashboard-layout";
 import { Briefcase, DollarSign, Clock, Plus } from "lucide-react";
 import Link from "next/link";
 import GigCreateModal from "./GigCreateModal";
-
+import GigManageCard from "./GigManageCard";
 
 export default async function ArtistGigsPage() {
   const user = await currentUser();
@@ -24,7 +24,10 @@ export default async function ArtistGigsPage() {
 
   if (!dbUser?.artistProfile) redirect("/onboarding");
 
-  const gigs = dbUser.artistProfile.services;
+  const gigs = dbUser.artistProfile.services.map(gig => ({
+    ...gig,
+    price: Number(gig.price)
+  }));
 
   return (
     <DashboardLayout role="ARTIST">
@@ -60,32 +63,9 @@ export default async function ArtistGigsPage() {
             <p className="text-white/20 text-sm">Click "Create New Gig" to start showcasing your work.</p>
           </div>
         ) : (
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
             {gigs.map((gig) => (
-              <div
-                key={gig.id}
-                className="border-2 border-white/10 bg-[#111] p-6 hover:border-[#f5e642] transition-colors group"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <h3 className="font-black text-white group-hover:text-[#f5e642] transition-colors leading-tight pr-4">
-                    {gig.title}
-                  </h3>
-                  <span className="text-xs font-bold uppercase px-2 py-0.5 border border-[#ff2a6d]/40 text-[#ff2a6d] flex-shrink-0">
-                    {gig.category}
-                  </span>
-                </div>
-                <p className="text-sm text-white/40 mb-4 line-clamp-2">{gig.description}</p>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1 text-[#00ffcc] font-black text-sm">
-                    <DollarSign className="h-3.5 w-3.5" />
-                    {Number(gig.price).toFixed(0)}
-                  </div>
-                  <div className="flex items-center gap-1 text-white/30 text-xs">
-                    <Clock className="h-3 w-3" />
-                    {gig.deliveryTime}d delivery
-                  </div>
-                </div>
-              </div>
+              <GigManageCard key={gig.id} gig={gig} />
             ))}
           </div>
         )}

@@ -29,8 +29,19 @@ export default async function ArtistDashboard() {
     redirect("/onboarding");
   }
 
+  // Calculate real earnings from COMPLETED orders
+  const completedOrders = await prisma.order.findMany({
+    where: {
+      sellerId: dbUser.id,
+      status: "COMPLETED"
+    },
+    select: { amount: true }
+  });
+
+  const totalEarnings = completedOrders.reduce((sum, order) => sum + Number(order.amount), 0);
+
   const stats = {
-    earnings: 0, // Placeholder for actual payment integration
+    earnings: totalEarnings,
     gigs: dbUser.artistProfile._count.services,
     orders: dbUser.artistProfile._count.sellerOrders,
     rating: dbUser.artistProfile.rating,

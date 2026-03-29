@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Filter, X } from "lucide-react";
+import { Filter, X, Loader2 } from "lucide-react";
 
 const categories = [
   { label: "All",      value: "all"      },
@@ -19,6 +19,7 @@ export function FilterSidebar() {
   const router      = useRouter();
   const pathname    = usePathname();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
 
   const [isOpen,    setIsOpen]    = useState(false);
   const [category,  setCategory]  = useState(searchParams.get("category") || "all");
@@ -26,18 +27,22 @@ export function FilterSidebar() {
   const [maxPrice,  setMaxPrice]  = useState(searchParams.get("maxPrice") || "3000");
 
   const apply = () => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (category && category !== "all") params.set("category", category); else params.delete("category");
-    params.set("minPrice", minPrice);
-    params.set("maxPrice", maxPrice);
-    router.push(`${pathname}?${params.toString()}`);
+    startTransition(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (category && category !== "all") params.set("category", category); else params.delete("category");
+      params.set("minPrice", minPrice);
+      params.set("maxPrice", maxPrice);
+      router.push(`${pathname}?${params.toString()}`);
+    });
   };
 
   const reset = () => {
     setCategory("all");
     setMinPrice("0");
     setMaxPrice("3000");
-    router.push(pathname);
+    startTransition(() => {
+      router.push(pathname);
+    });
   };
 
   return (
@@ -100,12 +105,12 @@ export function FilterSidebar() {
 
           {/* Actions */}
           <div className="space-y-2 border-t border-white/10 pt-4">
-            <button onClick={apply}
-              className="w-full py-3 font-black text-sm uppercase tracking-wider bg-[#f5e642] text-black border-2 border-[#f5e642] hover:bg-transparent hover:text-[#f5e642] transition-colors">
-              Apply Filters
+            <button onClick={apply} disabled={isPending}
+              className="flex justify-center items-center gap-2 w-full py-3 font-black text-sm uppercase tracking-wider bg-[#f5e642] text-black border-2 border-[#f5e642] hover:bg-transparent hover:text-[#f5e642] transition-colors disabled:opacity-50">
+              {isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Fetching...</> : "Apply Filters"}
             </button>
-            <button onClick={reset}
-              className="w-full py-3 font-bold text-sm uppercase tracking-wider border-2 border-white/10 text-white/50 hover:border-white/30 hover:text-white transition-colors">
+            <button onClick={reset} disabled={isPending}
+              className="w-full py-3 font-bold text-sm uppercase tracking-wider border-2 border-white/10 text-white/50 hover:border-white/30 hover:text-white transition-colors disabled:opacity-50">
               Reset
             </button>
           </div>

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { MapPin, Star, DollarSign, Clock, ArrowLeft, Mic2, MessageCircle } from "lucide-react";
+import { BookNowModal } from "@/src/components/book-now-modal";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -23,7 +24,16 @@ export default async function ArtistDetailPage({ params }: Props) {
 
   if (!profile) notFound();
 
-  const artist = profile.user;
+  // Fix Decimal serialization
+  const serializedProfile = {
+    ...profile,
+    services: profile.services.map(s => ({
+      ...s,
+      price: Number(s.price)
+    }))
+  };
+
+  const artist = serializedProfile.user;
 
   return (
     <div className="min-h-screen bg-[#0d0d0d]">
@@ -60,7 +70,7 @@ export default async function ArtistDetailPage({ params }: Props) {
 
               {/* Categories */}
               <div className="flex flex-wrap gap-2 justify-center mb-6">
-                {profile.skills.map((skill) => (
+                {serializedProfile.skills.map((skill) => (
                   <span key={skill} className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 border border-[#f5e642]/40 text-[#f5e642]">
                     {skill}
                   </span>
@@ -71,51 +81,49 @@ export default async function ArtistDetailPage({ params }: Props) {
               <div className="grid grid-cols-2 gap-px bg-white/10 border border-white/10 mb-6">
                 <div className="bg-[#111] p-4 text-center">
                   <div className="text-2xl font-black text-[#f5e642]">
-                    {profile.rating.toFixed(1)}
+                    {serializedProfile.rating.toFixed(1)}
                   </div>
                   <div className="text-xs text-white/40 uppercase tracking-wider flex items-center justify-center gap-1 mt-1">
                     <Star className="h-3 w-3" /> Rating
                   </div>
                 </div>
                 <div className="bg-[#111] p-4 text-center">
-                  <div className="text-2xl font-black text-[#f5e642]">{profile.reviewCount}</div>
+                  <div className="text-2xl font-black text-[#f5e642]">{serializedProfile.reviewCount}</div>
                   <div className="text-xs text-white/40 uppercase tracking-wider mt-1">Reviews</div>
                 </div>
                 <div className="bg-[#111] p-4 text-center col-span-2">
-                  <div className="text-2xl font-black text-[#00ffcc]">{profile.services.length}</div>
+                  <div className="text-2xl font-black text-[#00ffcc]">{serializedProfile.services.length}</div>
                   <div className="text-xs text-white/40 uppercase tracking-wider mt-1">Services</div>
                 </div>
               </div>
 
               {/* Action */}
-              <button
-                className="w-full py-4 font-black text-sm uppercase tracking-wider bg-[#f5e642] text-black border-2 border-[#f5e642] hover:bg-transparent hover:text-[#f5e642] transition-colors flex items-center justify-center gap-2"
-                style={{ boxShadow: "4px 4px 0px 0px #ff2a6d" }}
-              >
-                <MessageCircle className="h-4 w-4" />
-                Request Quote
-              </button>
+              <BookNowModal 
+                artistId={serializedProfile.id} 
+                artistName={artist.fullName || "Artist"} 
+                services={serializedProfile.services} 
+              />
             </div>
           </div>
 
           {/* Right: Details */}
           <div className="lg:col-span-2 space-y-8">
             {/* Bio */}
-            {profile.bio && (
+            {serializedProfile.bio && (
               <div>
                 <p className="text-[#f5e642] font-mono text-xs uppercase tracking-widest mb-4">// About</p>
                 <div className="border-2 border-white/10 bg-[#111] p-8">
-                  <p className="text-white/70 leading-relaxed text-lg">{profile.bio}</p>
+                  <p className="text-white/70 leading-relaxed text-lg">{serializedProfile.bio}</p>
                 </div>
               </div>
             )}
 
             {/* Services / Gigs */}
-            {profile.services.length > 0 && (
+            {serializedProfile.services.length > 0 && (
               <div>
                 <p className="text-[#f5e642] font-mono text-xs uppercase tracking-widest mb-4">// Services Offered</p>
                 <div className="grid sm:grid-cols-2 gap-4">
-                  {profile.services.map((service) => (
+                  {serializedProfile.services.map((service) => (
                     <div
                       key={service.id}
                       className="border-2 border-white/10 bg-[#111] p-6 hover:border-[#f5e642] transition-colors group"
@@ -127,7 +135,7 @@ export default async function ArtistDetailPage({ params }: Props) {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1 text-[#00ffcc] font-black">
                           <DollarSign className="h-4 w-4" />
-                          {Number(service.price).toFixed(0)}
+                          {service.price.toFixed(0)}
                         </div>
                         <div className="flex items-center gap-1 text-white/40 text-xs">
                           <Clock className="h-3 w-3" />

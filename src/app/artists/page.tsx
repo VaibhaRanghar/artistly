@@ -2,9 +2,8 @@ import { FilterSidebar } from "@/src/components/filter-sidebar";
 import { Suspense } from "react";
 import ArtistsLayout from "./ArtistsLayout";
 import { prisma } from "@/src/lib/prisma";
-import { ServiceCategory } from "@prisma/client";
+import { Prisma, ServiceCategory } from "@prisma/client";
 import type { Artist } from "@/src/types";
-
 
 interface PageProps {
   searchParams: Promise<{
@@ -13,53 +12,93 @@ interface PageProps {
     maxPrice?: string;
     search?: string;
     view?: string;
+    page?: string;
   }>;
 }
 
 export default async function ArtistListingPage({ searchParams }: PageProps) {
   const params = await searchParams;
+  const page = Math.max(1, parseInt(params.page || "1"));
+  const limit = 20;
+  const skip = (page - 1) * limit;
   
   // Build Prisma query based on search params
-  const where: any = {};
-  
+  const serviceWhere: Prisma.ServiceWhereInput = {};
+  let hasServiceFilter = false;
+
   if (params.category && params.category !== "all") {
-    where.category = params.category as ServiceCategory;
+    serviceWhere.category = params.category.toUpperCase() as ServiceCategory;
+    hasServiceFilter = true;
   }
   
   if (params.minPrice || params.maxPrice) {
-    where.price = {};
-    if (params.minPrice) where.price.gte = Number(params.minPrice);
-    if (params.maxPrice) where.price.lte = Number(params.maxPrice);
+    const min = Number(params.minPrice || 0);
+    const max = Number(params.maxPrice || 1000000);
+    
+    // Only apply price filter if it's explicitly set to non-default bounds
+    if (min > 0 || max < 3000) {
+      serviceWhere.price = { gte: min, lte: max };
+      hasServiceFilter = true;
+    }
   }
 
   if (params.search) {
-    where.OR = [
+    serviceWhere.OR = [
       { title: { contains: params.search, mode: "insensitive" } },
       { description: { contains: params.search, mode: "insensitive" } },
     ];
+    hasServiceFilter = true;
   }
 
-  const artistsData = await prisma.artistProfile.findMany({
-    include: {
-      user: true,
-      services: true,
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  const artistWhere: Prisma.ArtistProfileWhereInput = {};
+  if (hasServiceFilter) {
+    artistWhere.services = { some: serviceWhere };
+  }
+
+  const [artistsData, totalArtists] = await Promise.all([
+    prisma.artistProfile.findMany({
+      where: artistWhere,
+      include: {
+        user: true,
+        services: {
+          // removed take: 1 so we get all matching services
+          where: serviceWhere,
+          orderBy: { price: "asc" }
+        },
+        _count: {
+          select: { services: true }
+        }
+      },
+      skip,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.artistProfile.count({ where: artistWhere })
+  ]);
 
   // Transform to match the Artist interface
-  const artists: Artist[] = artistsData.map(profile => ({
-    id: profile.id,
-    name: profile.user.fullName || "Unnamed Artist",
-    bio: profile.bio || "Professional artist ready to perform.",
-    location: "Global",
-    city: "Remote",
-    categories: profile.skills.length > 0 ? profile.skills : ["General Performance"],
-    languages: ["English"],
-    feeRange: `$${profile.services[0]?.price || 0}`,
-    profileImage: profile.user.imageUrl || undefined,
-    createdAt: profile.createdAt,
-  }));
+  const artists: Artist[] = artistsData.map(profile => {
+    const minPrice = Number(profile.minimumPrice) || Number(profile.services[0]?.price) || 0;
+    const maxPrice = Number(profile.maximumPrice) || minPrice;
+    const feeRange = minPrice === maxPrice ? `$${minPrice}` : `$${minPrice} - $${maxPrice}`;
+
+    // Combine explicit skills and dynamic service categories
+    const serviceCats = profile.services.map(s => s.category);
+    const allCategories = Array.from(new Set([...profile.skills, ...serviceCats]));
+
+    return {
+      id: profile.id,
+      name: profile.user.fullName || "Unnamed Artist",
+      bio: profile.bio || "Professional artist ready to perform.",
+      location: profile.location || "Global",
+      city: profile.city || "Remote",
+      categories: allCategories.length > 0 ? allCategories : ["General Performance"],
+      languages: profile.languages.length > 0 ? profile.languages : ["English"],
+      feeRange,
+      profileImage: profile.user.imageUrl || undefined,
+      createdAt: profile.createdAt,
+    };
+  });
 
   return (
     <Suspense fallback={

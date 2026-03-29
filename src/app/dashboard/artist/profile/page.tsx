@@ -5,6 +5,7 @@ import { DashboardLayout } from "@/src/components/dashboard/dashboard-layout";
 import Image from "next/image";
 import { Mail, User, Star, Music2, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import EditProfileModal from "./EditProfileModal";
 
 export default async function ArtistProfilePage() {
   const user = await currentUser();
@@ -27,13 +28,21 @@ export default async function ArtistProfilePage() {
             <p className="text-[#f5e642] font-mono text-xs uppercase tracking-widest mb-1">// my profile</p>
             <h1 className="text-4xl font-black text-white">PROFILE</h1>
           </div>
-          <Link
-            href={`/artists/${profile.id}`}
-            className="flex items-center gap-2 border-2 border-white/20 text-white/70 px-4 py-2 text-sm font-bold uppercase tracking-wider hover:border-[#f5e642] hover:text-[#f5e642] transition-colors"
-          >
-            <ExternalLink className="h-4 w-4" />
-            Public View
-          </Link>
+          <div className="flex items-center gap-3">
+            <EditProfileModal 
+              initialBio={profile.bio || ""}
+              initialLocation={profile.location || profile.city || ""}
+              initialLanguages={profile.languages || []}
+              initialSkills={profile.skills || []}
+            />
+            <Link
+              href={`/artists/${profile.id}`}
+              className="flex items-center gap-2 border-2 border-white/20 text-white/70 px-4 py-2 text-sm font-bold uppercase tracking-wider hover:border-[#f5e642] hover:text-[#f5e642] transition-colors"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Public View
+            </Link>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">

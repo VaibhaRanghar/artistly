@@ -5,23 +5,27 @@ import {
   SignUpButton, 
   UserButton, 
   SignedIn, 
-  SignedOut 
+  SignedOut,
+  useUser
 } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Button } from "@/src/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
 
 export function Navigation() {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user } = useUser();
+  const role = user?.publicMetadata?.role as string | undefined;
 
   const navItems = [
     { href: "/", label: "Home" },
-    { href: "/artists", label: "Find Artists" },
+    ...(role === "ARTIST" 
+      ? [{ href: "/events", label: "Find Events" }]
+      : [{ href: "/artists", label: "Find Artists" }]
+    )
   ];
 
   const isActive = (href: string) => pathname === href;

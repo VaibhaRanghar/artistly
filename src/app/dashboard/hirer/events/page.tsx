@@ -4,6 +4,7 @@ import { prisma } from "@/src/lib/prisma";
 import { DashboardLayout } from "@/src/components/dashboard/dashboard-layout";
 import { Calendar, MapPin, DollarSign } from "lucide-react";
 import EventCreateModal from "./EventCreateModal";
+import EventManageCard from "./EventManageCard";
 
 export default async function HirerEventsPage() {
   const user = await currentUser();
@@ -26,13 +27,6 @@ export default async function HirerEventsPage() {
   if (!dbUser?.hirerProfile) redirect("/onboarding");
 
   const events = dbUser.hirerProfile.events;
-
-  const statusColor: Record<string, string> = {
-    OPEN: "#00ffcc",
-    IN_PROGRESS: "#f5e642",
-    COMPLETED: "#888",
-    CANCELLED: "#ff2a6d",
-  };
 
   return (
     <DashboardLayout role="HIRER">
@@ -69,43 +63,9 @@ export default async function HirerEventsPage() {
           </div>
         ) : (
           <div className="grid gap-4">
-            {events.map((event) => {
-              const budget = event.budget ? Number(event.budget) : null;
-              const color = statusColor[event.status] || "#888";
-              return (
-                <div key={event.id} className="border-2 border-white/10 bg-[#111] p-6 hover:border-[#ff2a6d] transition-colors group">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 border"
-                          style={{ borderColor: color + "60", color }}>
-                          {event.status}
-                        </span>
-                        <span className="text-xs text-white/30 font-mono">{event._count.orders} proposals</span>
-                      </div>
-                      <h3 className="text-xl font-black text-white group-hover:text-[#ff2a6d] transition-colors mb-2">{event.title}</h3>
-                      <p className="text-white/50 text-sm line-clamp-2 mb-4">{event.description}</p>
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-white/40">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {new Date(event.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {event.location}
-                        </div>
-                        {budget && (
-                          <div className="flex items-center gap-1 text-[#00ffcc] font-bold">
-                            <DollarSign className="h-3 w-3" />
-                            ${budget.toLocaleString()}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {events.map((event) => (
+              <EventManageCard key={event.id} event={event} />
+            ))}
           </div>
         )}
       </div>

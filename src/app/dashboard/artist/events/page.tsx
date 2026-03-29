@@ -1,13 +1,25 @@
 import { prisma } from "@/src/lib/prisma";
 import { DashboardLayout } from "@/src/components/dashboard/dashboard-layout";
-import { Calendar, MapPin, DollarSign, ArrowRight } from "lucide-react";
+import { Calendar, MapPin, DollarSign, ArrowRight, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import ExpressInterestModal from "./ExpressInterestModal";
 
 export default async function ArtistEventsPage() {
   const user = await currentUser();
   if (!user) redirect("/sign-in");
+
+  const dbUser = await prisma.user.findUnique({
+    where: { clerkId: user.id },
+    include: {
+      artistProfile: {
+        include: { services: true }
+      }
+    }
+  });
+
+  if (!dbUser?.artistProfile) redirect("/onboarding");
 
   // Fetch all open events from hirers
   const events = await prisma.event.findMany({
@@ -18,6 +30,19 @@ export default async function ArtistEventsPage() {
     },
     orderBy: { date: "asc" },
   });
+
+  // Check which events this artist has already applied to
+  const appliedOrders = await prisma.order.findMany({
+    where: { sellerId: dbUser.artistProfile.id, eventId: { not: null } },
+    select: { eventId: true }
+  });
+  const appliedEventIds = new Set(appliedOrders.map(o => o.eventId));
+
+  const artistServices = dbUser.artistProfile.services.map(s => ({
+    id: s.id,
+    title: s.title,
+    price: s.price,
+  }));
 
   return (
     <DashboardLayout role="ARTIST">
@@ -46,6 +71,8 @@ export default async function ArtistEventsPage() {
           <div className="grid gap-4">
             {events.map((event) => {
               const budgetNum = event.budget ? Number(event.budget) : null;
+              const hasApplied = appliedEventIds.has(event.id);
+
               return (
                 <div
                   key={event.id}
@@ -93,12 +120,17 @@ export default async function ArtistEventsPage() {
                           {event.hirer.user.fullName || "Hirer"}
                         </p>
                       </div>
-                      <button
-                        className="flex items-center gap-2 bg-[#f5e642] text-black px-4 py-2 text-xs font-black uppercase tracking-wider border-2 border-[#f5e642] hover:bg-transparent hover:text-[#f5e642] transition-colors"
-                      >
-                        Express Interest
-                        <ArrowRight className="h-3 w-3" />
-                      </button>
+                      {hasApplied ? (
+                        <div className="flex items-center gap-2 text-[#00ffcc] border-2 border-[#00ffcc]/30 bg-[#00ffcc]/10 px-4 py-2 text-xs font-black uppercase tracking-wider">
+                          <CheckCircle2 className="h-4 w-4" /> Applied
+                        </div>
+                      ) : (
+                        <ExpressInterestModal 
+                          eventId={event.id} 
+                          services={artistServices} 
+                          defaultAmount={budgetNum || undefined} 
+                        />
+                      )}
                     </div>
                   </div>
                 </div>

@@ -23,7 +23,8 @@
     "react-hook-form": "^7.58.1",
     "svix": "^1.45.0",
     "tailwind-merge": "^2.0.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^20",
