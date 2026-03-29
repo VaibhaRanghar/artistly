@@ -1,89 +1,55 @@
 import React from "react";
-import Link from "next/link";
-import { Button } from "@/src/components/ui/button";
-import { Mic, Music, Users, Volume2 } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/src/components/ui/card";
+import { Mic2, Music, Users, Star, Wand2, Radio, Headphones } from "lucide-react";
 
 const categories = [
-  {
-    title: "Singers",
-    description: "Professional vocalists for all genres and events",
-    icon: Mic,
-    count: "500+",
-    href: "/artists?category=Singers",
-  },
-  {
-    title: "Dancers",
-    description: "Choreographers and performers for any style",
-    icon: Users,
-    count: "300+",
-    href: "/artists?category=Dancers",
-  },
-  {
-    title: "Speakers",
-    description: "Motivational and keynote speakers",
-    icon: Volume2,
-    count: "200+",
-    href: "/artists?category=Speakers",
-  },
-  {
-    title: "DJs",
-    description: "Professional DJs for parties and events",
-    icon: Music,
-    count: "400+",
-    href: "/artists?category=DJs",
-  },
+  { icon: Mic2,      label: "Singers",   color: "#f5e642", count: "340+" },
+  { icon: Music,     label: "Dancers",   color: "#ff2a6d", count: "210+" },
+  { icon: Radio,     label: "DJs",       color: "#00ffcc", count: "180+" },
+  { icon: Users,     label: "Speakers",  color: "#f5e642", count: "290+" },
+  { icon: Headphones,label: "Musicians", color: "#ff2a6d", count: "420+" },
+  { icon: Wand2,     label: "Magicians", color: "#00ffcc", count: "90+"  },
 ];
 
 function Categories() {
   return (
-    <section className="py-20">
+    <section className="py-24 bg-[#0d0d0d] border-t border-white/10">
       <div className="container mx-auto px-4">
-        <div className="max-w-2xl mx-auto text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Browse by Category</h2>
-          <p className="text-muted-foreground">
-            Find the perfect artist for your event from our diverse categories
-          </p>
+        <div className="flex items-end justify-between mb-16">
+          <div>
+            <p className="text-[#f5e642] font-mono text-sm uppercase tracking-widest mb-3">// 06 categories</p>
+            <h2 className="text-5xl font-black text-white leading-none">
+              BROWSE BY<br />
+              <span className="text-[#ff2a6d]">TALENT</span>
+            </h2>
+          </div>
+          <a href="/artists" className="hidden md:inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-white/50 hover:text-[#f5e642] transition-colors border border-white/20 px-4 py-2 hover:border-[#f5e642]">
+            View All →
+          </a>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {categories.map((category, index) => {
-            const Icon = category.icon;
-            return (
-              <Card
-                key={category.title}
-                className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-px bg-white/10 border border-white/10">
+          {categories.map(({ icon: Icon, label, color, count }) => (
+            <a
+              key={label}
+              href={`/artists?category=${label.toUpperCase()}`}
+              className="group relative bg-[#111] p-8 flex flex-col gap-4 hover:bg-[#1a1a1a] transition-colors cursor-pointer"
+            >
+              <div
+                className="w-12 h-12 border-2 flex items-center justify-center transition-all group-hover:scale-110"
+                style={{ borderColor: color }}
               >
-                <CardHeader className="text-center pb-4">
-                  <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <Icon className="h-8 w-8 text-white" />
-                  </div>
-                  <CardTitle className="text-xl">{category.title}</CardTitle>
-                  <CardDescription className="text-sm">
-                    {category.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="text-center">
-                  <div className="text-2xl font-bold text-primary mb-4">
-                    {category.count}
-                  </div>
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
-                  >
-                    <Link href={category.href}>Browse {category.title}</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
+                <Icon className="h-6 w-6" style={{ color }} />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-white uppercase tracking-wide">{label}</h3>
+                <p className="text-sm text-white/40 font-mono">{count} artists</p>
+              </div>
+              <div
+                className="absolute bottom-0 left-0 h-0.5 w-0 group-hover:w-full transition-all duration-300"
+                style={{ backgroundColor: color }}
+              />
+            </a>
+          ))}
         </div>
       </div>
     </section>

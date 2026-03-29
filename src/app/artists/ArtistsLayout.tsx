@@ -3,31 +3,28 @@
 import { motion } from "framer-motion";
 import { ArtistCard } from "@/src/components/artist-card";
 import { useSearchParams } from "next/navigation";
-import { useArtist } from "@/src/contexts/artist-context";
+import type { Artist } from "@/src/types";
+import { UsersRound } from "lucide-react";
 
-function ArtistsLayout() {
-  const { filteredArtists } = useArtist();
-  const searchParams = useSearchParams();
-  const viewMode = (searchParams.get("view") as "grid" | "list") || "grid";
+interface ArtistsLayoutProps {
+  artists: Artist[];
+}
 
+function ArtistsLayout({ artists }: ArtistsLayoutProps) {
   return (
     <>
-      {filteredArtists.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">
-            No artists found matching your criteria.
-          </p>
+      {artists.length === 0 ? (
+        <div className="border-2 border-dashed border-white/10 p-16 text-center">
+          <UsersRound className="h-12 w-12 text-white/20 mx-auto mb-4" />
+          <p className="text-white/30 font-black uppercase tracking-wider text-lg mb-2">No artists found</p>
+          <p className="text-white/20 text-sm">Try adjusting your filters or check back later.</p>
         </div>
       ) : (
         <motion.div
           layout
-          className={
-            viewMode === "grid"
-              ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
-              : "space-y-4"
-          }
+          className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
         >
-          {filteredArtists.map((artist, index) => (
+          {artists.map((artist, index) => (
             <ArtistCard key={artist.id} artist={artist} index={index} />
           ))}
         </motion.div>

@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  USER
+  ARTIST
+  HIRER
+  ADMIN
+}
+
+enum ServiceCategory {
+  SINGERS
+  DANCERS
+  DJS
+  SPEAKERS
+  MUSICIANS
+  MAGICIANS
+  OTHERS
+}
+
+enum OrderStatus {
+  PENDING
+  IN_PROGRESS
+  DELIVERED
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum EventStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  clerkId   String   @unique
+  email     String   @unique
+  fullName  String?
+  imageUrl  String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  artistProfile ArtistProfile?
+  hirerProfile  HirerProfile?
+  reviews       Review[]
+  buyerOrders   Order[]        @relation("BuyerOrders")
+}
+
+model ArtistProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio         String?
+  skills      String[]
+  portfolio   String[] // URLs to images
+  rating      Float    @default(0)
+  reviewCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  services     Service[]
+  sellerOrders Order[]   @relation("SellerOrders")
+}
+
+model HirerProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  events      Event[]
+}
+
+model Event {
+  id          String    @id @default(uuid())
+  hirerId     String
+  hirer       HirerProfile @relation(fields: [hirerId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  date        DateTime
+  location    String
+  budget      Decimal?   @db.Decimal(10, 2)
+  status      EventStatus @default(OPEN)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  orders      Order[]
+
+  @@index([status])
+  @@index([date])
+}
+
+model Service {
+  id          String          @id @default(uuid())
+  artistId    String
+  artist      ArtistProfile   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  price       Decimal         @db.Decimal(10, 2)
+  category    ServiceCategory
+  images      String[]
+  tags        String[]
+  deliveryTime Int             // in days
+  revisionCount Int            @default(0)
+  features    String[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  orders      Order[]
+  reviews     Review[]
+
+  @@index([category])
+  @@index([price])
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  serviceId   String
+  service     Service     @relation(fields: [serviceId], references: [id])
+  buyerId     String
+  buyer       User        @relation("BuyerOrders", fields: [buyerId], references: [id])
+  sellerId    String
+  seller      ArtistProfile @relation("SellerOrders", fields: [sellerId], references: [id])
+  eventId     String?
+  event       Event?      @relation(fields: [eventId], references: [id])
+  status      OrderStatus @default(PENDING)
+  amount      Decimal     @db.Decimal(10, 2)
+  requirements String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Review {
+  id          String   @id @default(uuid())
+  serviceId   String
+  service     Service  @relation(fields: [serviceId], references: [id])
+  reviewerId  String
+  reviewer    User     @relation(fields: [reviewerId], references: [id])
+  rating      Int      @default(5)
+  comment     String?
+  createdAt   DateTime @default(now())
+
+  @@index([serviceId])
+}
