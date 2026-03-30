@@ -1,5 +1,6 @@
 import React from "react";
 import { Mic2, Music, Users, Star, Wand2, Radio, Headphones } from "lucide-react";
+import Link from "next/link";
 
 const categories = [
   { icon: Mic2,      label: "Singers",   color: "#f5e642", count: "340+" },
@@ -16,20 +17,20 @@ function Categories() {
       <div className="container mx-auto px-4">
         <div className="flex items-end justify-between mb-16">
           <div>
-            <p className="text-[#f5e642] font-mono text-sm uppercase tracking-widest mb-3">// 06 categories</p>
+            <p className="text-[#f5e642] font-mono text-sm uppercase tracking-widest mb-3">{"// 06 categories"}</p>
             <h2 className="text-5xl font-black text-white leading-none">
               BROWSE BY<br />
               <span className="text-[#ff2a6d]">TALENT</span>
             </h2>
           </div>
-          <a href="/artists" className="hidden md:inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-white/50 hover:text-[#f5e642] transition-colors border border-white/20 px-4 py-2 hover:border-[#f5e642]">
+          <Link href="/artists" className="hidden md:inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-white/50 hover:text-[#f5e642] transition-colors border border-white/20 px-4 py-2 hover:border-[#f5e642]">
             View All →
-          </a>
+          </Link>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-px bg-white/10 border border-white/10">
           {categories.map(({ icon: Icon, label, color, count }) => (
-            <a
+            <Link
               key={label}
               href={`/artists?category=${label.toUpperCase()}`}
               className="group relative bg-[#111] p-8 flex flex-col gap-4 hover:bg-[#1a1a1a] transition-colors cursor-pointer"
@@ -48,7 +49,7 @@ function Categories() {
                 className="absolute bottom-0 left-0 h-0.5 w-0 group-hover:w-full transition-all duration-300"
                 style={{ backgroundColor: color }}
               />
-            </a>
+            </Link>
           ))}
         </div>
       </div>

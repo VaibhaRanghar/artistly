@@ -16,13 +16,15 @@ export default function OrderActions({ orderId, status, isEventApplication }: Or
   const handleUpdate = async (newStatus: "ACCEPTED" | "IN_PROGRESS" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED") => {
     setIsPending(true);
     try {
-      const result = await updateOrderStatus({
+      await updateOrderStatus({
         orderId,
         status: newStatus,
       });
       // Component will remount with new status from server
     } catch (error) {
       console.error(error);
+      setIsPending(false);
+    } finally {
       setIsPending(false);
     }
   };

@@ -10,19 +10,33 @@ interface HirerOrderActionsProps {
   isEventApplication: boolean;
 }
 
-export default function HirerOrderActions({ orderId, status, isEventApplication }: HirerOrderActionsProps) {
+export default function HirerOrderActions({
+  orderId,
+  status,
+  isEventApplication,
+}: HirerOrderActionsProps) {
   const [isPending, setIsPending] = useState(false);
 
-  const handleUpdate = async (newStatus: "ACCEPTED" | "IN_PROGRESS" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED") => {
+  const handleUpdate = async (
+    newStatus:
+      | "ACCEPTED"
+      | "IN_PROGRESS"
+      | "DELIVERED"
+      | "COMPLETED"
+      | "CANCELLED"
+      | "REJECTED",
+  ) => {
     setIsPending(true);
     try {
       await updateOrderStatus({
         orderId,
         status: newStatus,
       });
-      // Component will remount with new status
+      // Component will remount with new status from server
     } catch (error) {
       console.error(error);
+      setIsPending(false);
+    } finally {
       setIsPending(false);
     }
   };
@@ -40,13 +54,13 @@ export default function HirerOrderActions({ orderId, status, isEventApplication 
     if (status === "PENDING") {
       return (
         <div className="flex gap-2">
-          <button 
+          <button
             onClick={() => handleUpdate("REJECTED")}
             className="flex items-center gap-1 px-3 py-1.5 border border-red-500/50 text-red-500 hover:bg-red-500 hover:text-white transition-colors text-xs font-bold uppercase"
           >
             <X className="h-3 w-3" /> Reject
           </button>
-          <button 
+          <button
             onClick={() => handleUpdate("ACCEPTED")}
             className="flex items-center gap-1 px-4 py-1.5 bg-[#f5e642] text-black hover:bg-[#ffe31a] transition-colors text-xs font-black uppercase"
           >
@@ -59,7 +73,7 @@ export default function HirerOrderActions({ orderId, status, isEventApplication 
     // DIRECT BOOKING LOGIC
     if (status === "PENDING") {
       return (
-        <button 
+        <button
           onClick={() => handleUpdate("CANCELLED")}
           className="flex items-center gap-1 px-3 py-1.5 border border-white/20 text-white/50 hover:border-red-500 hover:text-red-500 transition-colors text-xs font-bold uppercase"
         >
@@ -72,7 +86,7 @@ export default function HirerOrderActions({ orderId, status, isEventApplication 
   // COMMON LOGIC
   if (status === "DELIVERED") {
     return (
-      <button 
+      <button
         onClick={() => handleUpdate("COMPLETED")}
         className="flex items-center gap-2 px-4 py-2 bg-[#00ffcc] text-black hover:bg-transparent hover:text-[#00ffcc] border-2 border-[#00ffcc] transition-colors text-xs font-black uppercase"
       >
@@ -83,12 +97,12 @@ export default function HirerOrderActions({ orderId, status, isEventApplication 
 
   if (status === "CANCELLED" || status === "COMPLETED") {
     return (
-      <button 
+      <button
         onClick={async () => {
           // In a real app we might delete it, here we just show a visual cue or maybe we hide it via soft-delete.
           // For MVP, we can just allow them to 'Archived' it, but Prisma schema doesn't have Archive.
           // Let's implement real DELETE in a custom action if we need to.
-          alert("Delete functionality coming soon!"); // Placeholder for actual delete 
+          alert("Delete functionality coming soon!"); // Placeholder for actual delete
         }}
         className="flex items-center gap-1 px-3 py-1 border border-white/10 text-white/30 hover:text-red-500 hover:border-red-500/50 transition-colors text-[10px] font-bold uppercase"
       >

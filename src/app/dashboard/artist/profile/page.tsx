@@ -25,11 +25,13 @@ export default async function ArtistProfilePage() {
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[#f5e642] font-mono text-xs uppercase tracking-widest mb-1">// my profile</p>
+            <p className="text-[#f5e642] font-mono text-xs uppercase tracking-widest mb-1">
+              {"// my profile"}
+            </p>
             <h1 className="text-4xl font-black text-white">PROFILE</h1>
           </div>
           <div className="flex items-center gap-3">
-            <EditProfileModal 
+            <EditProfileModal
               initialBio={profile.bio || ""}
               initialLocation={profile.location || profile.city || ""}
               initialLanguages={profile.languages || []}
@@ -50,25 +52,40 @@ export default async function ArtistProfilePage() {
           <div className="border-2 border-white/10 bg-[#111] p-8 text-center">
             <div className="relative w-28 h-28 mx-auto mb-5 border-2 border-[#f5e642] overflow-hidden">
               {user.imageUrl ? (
-                <Image src={user.imageUrl} alt={user.fullName || "profile"} fill className="object-cover" />
+                <Image
+                  src={user.imageUrl}
+                  alt={user.fullName || "profile"}
+                  fill
+                  className="object-cover"
+                />
               ) : (
                 <div className="w-full h-full bg-[#f5e642]/10 flex items-center justify-center text-5xl font-black text-[#f5e642]">
                   {(user.fullName || "A").charAt(0)}
                 </div>
               )}
             </div>
-            <h2 className="text-xl font-black text-white mb-1">{user.fullName || "Artist"}</h2>
+            <h2 className="text-xl font-black text-white mb-1">
+              {user.fullName || "Artist"}
+            </h2>
             <p className="text-white/40 text-sm font-mono mb-5">
               {user.emailAddresses[0]?.emailAddress}
             </p>
             <div className="grid grid-cols-2 gap-px bg-white/10 border border-white/10">
               <div className="bg-[#111] p-3 text-center">
-                <div className="text-xl font-black text-[#f5e642]">{profile.rating.toFixed(1)}</div>
-                <div className="text-xs text-white/40 uppercase tracking-wider">Rating</div>
+                <div className="text-xl font-black text-[#f5e642]">
+                  {profile.rating.toFixed(1)}
+                </div>
+                <div className="text-xs text-white/40 uppercase tracking-wider">
+                  Rating
+                </div>
               </div>
               <div className="bg-[#111] p-3 text-center">
-                <div className="text-xl font-black text-[#f5e642]">{profile.reviewCount}</div>
-                <div className="text-xs text-white/40 uppercase tracking-wider">Reviews</div>
+                <div className="text-xl font-black text-[#f5e642]">
+                  {profile.reviewCount}
+                </div>
+                <div className="text-xs text-white/40 uppercase tracking-wider">
+                  Reviews
+                </div>
               </div>
             </div>
             <p className="text-xs text-white/30 mt-4">
@@ -80,17 +97,23 @@ export default async function ArtistProfilePage() {
           <div className="md:col-span-2 space-y-5">
             {/* Bio */}
             <div className="border-2 border-white/10 bg-[#111] p-6">
-              <p className="text-[#f5e642] font-mono text-xs uppercase tracking-widest mb-3">// Bio</p>
+              <p className="text-[#f5e642] font-mono text-xs uppercase tracking-widest mb-3">
+                {"// Bio"}
+              </p>
               {profile.bio ? (
                 <p className="text-white/70 leading-relaxed">{profile.bio}</p>
               ) : (
-                <p className="text-white/30 italic">No bio added yet. Complete onboarding to add one.</p>
+                <p className="text-white/30 italic">
+                  No bio added yet. Complete onboarding to add one.
+                </p>
               )}
             </div>
 
             {/* Skills */}
             <div className="border-2 border-white/10 bg-[#111] p-6">
-              <p className="text-[#f5e642] font-mono text-xs uppercase tracking-widest mb-4">// Skills / Categories</p>
+              <p className="text-[#f5e642] font-mono text-xs uppercase tracking-widest mb-4">
+                {"// Skills / Categories"}
+              </p>
               {profile.skills.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {profile.skills.map((skill) => (
@@ -103,17 +126,23 @@ export default async function ArtistProfilePage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-white/30 italic text-sm">No skills listed.</p>
+                <p className="text-white/30 italic text-sm">
+                  No skills listed.
+                </p>
               )}
             </div>
 
             {/* Account Info */}
             <div className="border-2 border-white/10 bg-[#111] p-6">
-              <p className="text-[#f5e642] font-mono text-xs uppercase tracking-widest mb-4">// Account</p>
+              <p className="text-[#f5e642] font-mono text-xs uppercase tracking-widest mb-4">
+                {"// Account"}
+              </p>
               <div className="space-y-3">
                 <div className="flex items-center gap-3 text-sm">
                   <Mail className="h-4 w-4 text-white/40" />
-                  <span className="text-white/70">{user.emailAddresses[0]?.emailAddress}</span>
+                  <span className="text-white/70">
+                    {user.emailAddresses[0]?.emailAddress}
+                  </span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                   <User className="h-4 w-4 text-white/40" />
@@ -121,11 +150,14 @@ export default async function ArtistProfilePage() {
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                   <Music2 className="h-4 w-4 text-white/40" />
-                  <span className="text-white/70 uppercase tracking-wide">Artist</span>
+                  <span className="text-white/70 uppercase tracking-wide">
+                    Artist
+                  </span>
                 </div>
               </div>
               <p className="text-xs text-white/20 mt-4 pt-4 border-t border-white/10">
-                To update your name or photo, use the account settings in the bottom-left of the sidebar.
+                To update your name or photo, use the account settings in the
+                bottom-left of the sidebar.
               </p>
             </div>
           </div>

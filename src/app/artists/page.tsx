@@ -110,7 +110,7 @@ export default async function ArtistListingPage({ searchParams }: PageProps) {
         {/* Hero header */}
         <div className="border-b border-white/10 py-12">
           <div className="container mx-auto px-4">
-            <p className="text-[#f5e642] font-mono text-xs uppercase tracking-widest mb-3">// browse</p>
+            <p className="text-[#f5e642] font-mono text-xs uppercase tracking-widest mb-3">{"// browse"}</p>
             <h1 className="text-5xl font-black text-white">FIND ARTISTS</h1>
             <p className="text-white/40 mt-2">{artists.length} verified artists available</p>
           </div>

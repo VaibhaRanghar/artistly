@@ -24,9 +24,9 @@ export default async function ArtistGigsPage() {
 
   if (!dbUser?.artistProfile) redirect("/onboarding");
 
-  const gigs = dbUser.artistProfile.services.map(gig => ({
+  const gigs = dbUser.artistProfile.services.map((gig) => ({
     ...gig,
-    price: Number(gig.price)
+    price: Number(gig.price),
   }));
 
   return (
@@ -35,7 +35,9 @@ export default async function ArtistGigsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[#f5e642] font-mono text-xs uppercase tracking-widest mb-1">// my services</p>
+            <p className="text-[#f5e642] font-mono text-xs uppercase tracking-widest mb-1">
+              {"// my services"}
+            </p>
             <h1 className="text-4xl font-black text-white">MY GIGS</h1>
           </div>
           <GigCreateModal />
@@ -45,12 +47,16 @@ export default async function ArtistGigsPage() {
         <div className="grid grid-cols-3 gap-px bg-white/10 border border-white/10">
           {[
             { label: "Total Gigs", value: gigs.length, color: "#f5e642" },
-            { label: "Active",     value: gigs.length, color: "#00ffcc" },
-            { label: "Revenue",    value: "$0",         color: "#ff2a6d" },
+            { label: "Active", value: gigs.length, color: "#00ffcc" },
+            { label: "Revenue", value: "$0", color: "#ff2a6d" },
           ].map((s) => (
             <div key={s.label} className="bg-[#111] p-5">
-              <div className="text-2xl font-black" style={{ color: s.color }}>{s.value}</div>
-              <div className="text-xs text-white/40 uppercase tracking-wider mt-1">{s.label}</div>
+              <div className="text-2xl font-black" style={{ color: s.color }}>
+                {s.value}
+              </div>
+              <div className="text-xs text-white/40 uppercase tracking-wider mt-1">
+                {s.label}
+              </div>
             </div>
           ))}
         </div>
@@ -59,8 +65,12 @@ export default async function ArtistGigsPage() {
         {gigs.length === 0 ? (
           <div className="border-2 border-dashed border-white/10 p-16 text-center">
             <Briefcase className="h-12 w-12 text-white/20 mx-auto mb-4" />
-            <p className="text-white/30 font-black uppercase tracking-wider text-lg mb-2">No gigs yet</p>
-            <p className="text-white/20 text-sm">Click "Create New Gig" to start showcasing your work.</p>
+            <p className="text-white/30 font-black uppercase tracking-wider text-lg mb-2">
+              No gigs yet
+            </p>
+            <p className="text-white/20 text-sm">
+              Click {"Create New Gig"} to start showcasing your work.
+            </p>
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">

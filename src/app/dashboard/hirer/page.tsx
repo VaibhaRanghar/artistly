@@ -1,6 +1,17 @@
 import { DashboardLayout } from "@/src/components/dashboard/dashboard-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
-import { ShoppingBag, Heart, MessageSquare, Search, Calendar } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/src/components/ui/card";
+import {
+  ShoppingBag,
+  Heart,
+  MessageSquare,
+  Search,
+  Calendar,
+} from "lucide-react";
 import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/src/lib/prisma";
 import { redirect } from "next/navigation";
@@ -17,27 +28,41 @@ export default async function HirerDashboard() {
           _count: {
             select: {
               events: true,
-            }
-          }
-        }
+            },
+          },
+        },
       },
       _count: {
         select: {
           buyerOrders: true,
-        }
-      }
-    }
+        },
+      },
+    },
   });
 
   if (!dbUser?.hirerProfile) {
     redirect("/onboarding");
   }
 
+  // Calculate real spent from COMPLETED orders
+  const spentOrders = await prisma.order.findMany({
+    where: {
+      buyerId: dbUser.id,
+      status: "COMPLETED",
+    },
+    select: { amount: true },
+  });
+
+  const totalSpent = spentOrders.reduce(
+    (sum, order) => sum + Number(order.amount),
+    0,
+  );
+
   const stats = {
     orders: dbUser._count.buyerOrders,
     events: dbUser.hirerProfile._count.events,
     favorites: 0, // Placeholder
-    spent: 0, // Placeholder
+    spent: totalSpent,
   };
 
   return (
@@ -45,7 +70,10 @@ export default async function HirerDashboard() {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold">Hirer Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back, {dbUser.fullName}! Manage your events and bookings here.</p>
+          <p className="text-muted-foreground">
+            Welcome back, {dbUser.fullName}! Manage your events and bookings
+            here.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -66,7 +94,9 @@ export default async function HirerDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.events}</div>
-              <p className="text-xs text-muted-foreground">Total events posted</p>
+              <p className="text-xs text-muted-foreground">
+                Total events posted
+              </p>
             </CardContent>
           </Card>
           <Card>
@@ -85,7 +115,9 @@ export default async function HirerDashboard() {
               <Search className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${stats.spent.toFixed(2)}</div>
+              <div className="text-2xl font-bold">
+                ${stats.spent.toFixed(2)}
+              </div>
               <p className="text-xs text-muted-foreground">Lifetime spend</p>
             </CardContent>
           </Card>
@@ -97,9 +129,15 @@ export default async function HirerDashboard() {
           </CardHeader>
           <CardContent>
             {stats.events === 0 ? (
-               <p className="text-sm text-muted-foreground italic">You haven't posted any events yet. Create one to start hiring!</p>
+              <p className="text-sm text-muted-foreground italic">
+                {
+                  "You haven't posted any events yet. Create one to start hiring!"
+                }
+              </p>
             ) : (
-               <p className="text-sm text-muted-foreground italic">Check your My Events tab for details.</p>
+              <p className="text-sm text-muted-foreground italic">
+                Check your My Events tab for details.
+              </p>
             )}
           </CardContent>
         </Card>

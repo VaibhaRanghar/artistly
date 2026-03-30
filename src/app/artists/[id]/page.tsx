@@ -2,7 +2,15 @@ import { prisma } from "@/src/lib/prisma";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, Star, DollarSign, Clock, ArrowLeft, Mic2, MessageCircle } from "lucide-react";
+import {
+  MapPin,
+  Star,
+  DollarSign,
+  Clock,
+  ArrowLeft,
+  Mic2,
+  MessageCircle,
+} from "lucide-react";
 import { BookNowModal } from "@/src/components/book-now-modal";
 
 interface Props {
@@ -27,10 +35,10 @@ export default async function ArtistDetailPage({ params }: Props) {
   // Fix Decimal serialization
   const serializedProfile = {
     ...profile,
-    services: profile.services.map(s => ({
+    services: profile.services.map((s) => ({
       ...s,
-      price: Number(s.price)
-    }))
+      price: Number(s.price),
+    })),
   };
 
   const artist = serializedProfile.user;
@@ -58,7 +66,12 @@ export default async function ArtistDetailPage({ params }: Props) {
               {/* Avatar */}
               <div className="relative w-28 h-28 mx-auto mb-6 border-2 border-[#f5e642] overflow-hidden">
                 {artist.imageUrl ? (
-                  <Image src={artist.imageUrl} alt={artist.fullName || "Artist"} fill className="object-cover" />
+                  <Image
+                    src={artist.imageUrl}
+                    alt={artist.fullName || "Artist"}
+                    fill
+                    className="object-cover"
+                  />
                 ) : (
                   <div className="w-full h-full bg-[#f5e642]/10 flex items-center justify-center text-5xl font-black text-[#f5e642]">
                     {(artist.fullName || "A").charAt(0)}
@@ -66,12 +79,17 @@ export default async function ArtistDetailPage({ params }: Props) {
                 )}
               </div>
 
-              <h1 className="text-2xl font-black text-white text-center mb-2">{artist.fullName || "Artist"}</h1>
+              <h1 className="text-2xl font-black text-white text-center mb-2">
+                {artist.fullName || "Artist"}
+              </h1>
 
               {/* Categories */}
               <div className="flex flex-wrap gap-2 justify-center mb-6">
                 {serializedProfile.skills.map((skill) => (
-                  <span key={skill} className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 border border-[#f5e642]/40 text-[#f5e642]">
+                  <span
+                    key={skill}
+                    className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 border border-[#f5e642]/40 text-[#f5e642]"
+                  >
                     {skill}
                   </span>
                 ))}
@@ -88,20 +106,28 @@ export default async function ArtistDetailPage({ params }: Props) {
                   </div>
                 </div>
                 <div className="bg-[#111] p-4 text-center">
-                  <div className="text-2xl font-black text-[#f5e642]">{serializedProfile.reviewCount}</div>
-                  <div className="text-xs text-white/40 uppercase tracking-wider mt-1">Reviews</div>
+                  <div className="text-2xl font-black text-[#f5e642]">
+                    {serializedProfile.reviewCount}
+                  </div>
+                  <div className="text-xs text-white/40 uppercase tracking-wider mt-1">
+                    Reviews
+                  </div>
                 </div>
                 <div className="bg-[#111] p-4 text-center col-span-2">
-                  <div className="text-2xl font-black text-[#00ffcc]">{serializedProfile.services.length}</div>
-                  <div className="text-xs text-white/40 uppercase tracking-wider mt-1">Services</div>
+                  <div className="text-2xl font-black text-[#00ffcc]">
+                    {serializedProfile.services.length}
+                  </div>
+                  <div className="text-xs text-white/40 uppercase tracking-wider mt-1">
+                    Services
+                  </div>
                 </div>
               </div>
 
               {/* Action */}
-              <BookNowModal 
-                artistId={serializedProfile.id} 
-                artistName={artist.fullName || "Artist"} 
-                services={serializedProfile.services} 
+              <BookNowModal
+                artistId={serializedProfile.id}
+                artistName={artist.fullName || "Artist"}
+                services={serializedProfile.services}
               />
             </div>
           </div>
@@ -111,9 +137,13 @@ export default async function ArtistDetailPage({ params }: Props) {
             {/* Bio */}
             {serializedProfile.bio && (
               <div>
-                <p className="text-[#f5e642] font-mono text-xs uppercase tracking-widest mb-4">// About</p>
+                <p className="text-[#f5e642] font-mono text-xs uppercase tracking-widest mb-4">
+                  {"// About"}
+                </p>
                 <div className="border-2 border-white/10 bg-[#111] p-8">
-                  <p className="text-white/70 leading-relaxed text-lg">{serializedProfile.bio}</p>
+                  <p className="text-white/70 leading-relaxed text-lg">
+                    {serializedProfile.bio}
+                  </p>
                 </div>
               </div>
             )}
@@ -121,7 +151,9 @@ export default async function ArtistDetailPage({ params }: Props) {
             {/* Services / Gigs */}
             {serializedProfile.services.length > 0 && (
               <div>
-                <p className="text-[#f5e642] font-mono text-xs uppercase tracking-widest mb-4">// Services Offered</p>
+                <p className="text-[#f5e642] font-mono text-xs uppercase tracking-widest mb-4">
+                  {"// Services Offered"}
+                </p>
                 <div className="grid sm:grid-cols-2 gap-4">
                   {serializedProfile.services.map((service) => (
                     <div
@@ -131,7 +163,9 @@ export default async function ArtistDetailPage({ params }: Props) {
                       <h3 className="font-black text-white mb-2 group-hover:text-[#f5e642] transition-colors">
                         {service.title}
                       </h3>
-                      <p className="text-sm text-white/40 mb-4 line-clamp-2">{service.description}</p>
+                      <p className="text-sm text-white/40 mb-4 line-clamp-2">
+                        {service.description}
+                      </p>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1 text-[#00ffcc] font-black">
                           <DollarSign className="h-4 w-4" />
@@ -156,7 +190,9 @@ export default async function ArtistDetailPage({ params }: Props) {
             {profile.services.length === 0 && (
               <div className="border-2 border-dashed border-white/10 p-12 text-center">
                 <Mic2 className="h-12 w-12 text-white/20 mx-auto mb-4" />
-                <p className="text-white/30 font-bold uppercase tracking-wide">No services listed yet</p>
+                <p className="text-white/30 font-bold uppercase tracking-wide">
+                  No services listed yet
+                </p>
               </div>
             )}
           </div>

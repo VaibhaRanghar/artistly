@@ -8,16 +8,18 @@ import type { Prisma } from "@prisma/client";
 interface Service {
   id: string;
   title: string;
-  price: Prisma.Decimal;
+  price: number | Prisma.Decimal;
 }
 
 interface ExpressInterestModalProps {
   eventId: string;
+  eventTitle?: string;
+  hirerId?: string;
   services: Service[];
   defaultAmount?: number;
 }
 
-export default function ExpressInterestModal({ eventId, services, defaultAmount = 0 }: ExpressInterestModalProps) {
+export default function ExpressInterestModal({ eventId, eventTitle, hirerId, services, defaultAmount = 0 }: ExpressInterestModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState("");
@@ -68,7 +70,7 @@ export default function ExpressInterestModal({ eventId, services, defaultAmount 
               <X className="h-5 w-5" />
             </button>
 
-            <p className="text-[#f5e642] font-mono text-xs uppercase tracking-widest mb-2">// Submit proposal</p>
+            <p className="text-[#f5e642] font-mono text-xs uppercase tracking-widest mb-2">{"// Submit proposal"}</p>
             <h2 className="text-2xl font-black text-white mb-6">EXPRESS INTEREST</h2>
 
             {services.length === 0 ? (

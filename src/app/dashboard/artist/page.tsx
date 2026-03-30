@@ -1,5 +1,10 @@
 import { DashboardLayout } from "@/src/components/dashboard/dashboard-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/src/components/ui/card";
 import { Briefcase, ShoppingBag, Star, TrendingUp } from "lucide-react";
 import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/src/lib/prisma";
@@ -18,11 +23,11 @@ export default async function ArtistDashboard() {
             select: {
               services: true,
               sellerOrders: true,
-            }
-          }
-        }
-      }
-    }
+            },
+          },
+        },
+      },
+    },
   });
 
   if (!dbUser?.artistProfile) {
@@ -33,12 +38,15 @@ export default async function ArtistDashboard() {
   const completedOrders = await prisma.order.findMany({
     where: {
       sellerId: dbUser.id,
-      status: "COMPLETED"
+      status: "COMPLETED",
     },
-    select: { amount: true }
+    select: { amount: true },
   });
 
-  const totalEarnings = completedOrders.reduce((sum, order) => sum + Number(order.amount), 0);
+  const totalEarnings = completedOrders.reduce(
+    (sum, order) => sum + Number(order.amount),
+    0,
+  );
 
   const stats = {
     earnings: totalEarnings,
@@ -52,18 +60,24 @@ export default async function ArtistDashboard() {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold">Artist Overview</h1>
-          <p className="text-muted-foreground">Welcome back, {dbUser.fullName}! Here's your profile status.</p>
+          <p className="text-muted-foreground">{`Welcome back, ${dbUser.fullName}! Here's your profile status.`}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Earnings
+              </CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${stats.earnings.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">Payment integration coming soon</p>
+              <div className="text-2xl font-bold">
+                ${stats.earnings.toFixed(2)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Payment integration coming soon
+              </p>
             </CardContent>
           </Card>
           <Card>
@@ -92,8 +106,12 @@ export default async function ArtistDashboard() {
               <Star className="h-4 w-4 text-yellow-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.rating.toFixed(1)}</div>
-              <p className="text-xs text-muted-foreground">Based on {dbUser.artistProfile.reviewCount} reviews</p>
+              <div className="text-2xl font-bold">
+                {stats.rating.toFixed(1)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Based on {dbUser.artistProfile.reviewCount} reviews
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -104,9 +122,15 @@ export default async function ArtistDashboard() {
           </CardHeader>
           <CardContent>
             {stats.gigs === 0 && stats.orders === 0 ? (
-               <p className="text-sm text-muted-foreground italic">You haven't added any gigs or received any orders yet. Let's get started!</p>
+              <p className="text-sm text-muted-foreground italic">
+                {
+                  "You haven't added any gigs or received any orders yet. Let's get started!"
+                }
+              </p>
             ) : (
-               <p className="text-sm text-muted-foreground italic">Check your Gigs and Orders tabs for details.</p>
+              <p className="text-sm text-muted-foreground italic">
+                Check your Gigs and Orders tabs for details.
+              </p>
             )}
           </CardContent>
         </Card>

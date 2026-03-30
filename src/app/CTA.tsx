@@ -13,13 +13,17 @@ function CTA() {
           {/* Background accent */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#f5e642]/5 rounded-full blur-3xl pointer-events-none" />
 
-          <p className="text-[#f5e642] font-mono text-sm uppercase tracking-widest mb-4">// ready to book?</p>
+          <p className="text-[#f5e642] font-mono text-sm uppercase tracking-widest mb-4">
+            {"// ready to book?"}
+          </p>
           <h2 className="text-5xl lg:text-6xl font-black text-white mb-6 leading-none">
-            MAKE YOUR EVENT<br />
+            MAKE YOUR EVENT
+            <br />
             <span className="text-[#ff2a6d]">UNFORGETTABLE.</span>
           </h2>
           <p className="text-white/50 text-lg mb-10 max-w-lg mx-auto">
-            Join thousands of satisfied customers who found their ideal entertainment through Artistly.
+            Join thousands of satisfied customers who found their ideal
+            entertainment through Artistly.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Link

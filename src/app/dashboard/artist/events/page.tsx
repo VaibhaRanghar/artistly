@@ -21,9 +21,8 @@ export default async function ArtistEventsPage() {
 
   if (!dbUser?.artistProfile) redirect("/onboarding");
 
-  // Fetch all open events from hirers
+  // Fetch all events from hirers as requested
   const events = await prisma.event.findMany({
-    where: { status: "OPEN" },
     include: {
       hirer: { include: { user: true } },
       _count: { select: { orders: true } },
@@ -33,7 +32,7 @@ export default async function ArtistEventsPage() {
 
   // Check which events this artist has already applied to
   const appliedOrders = await prisma.order.findMany({
-    where: { sellerId: dbUser.artistProfile.id, eventId: { not: null } },
+    where: { sellerId: dbUser.id, eventId: { not: null } },
     select: { eventId: true }
   });
   const appliedEventIds = new Set(appliedOrders.map(o => o.eventId));
@@ -41,30 +40,49 @@ export default async function ArtistEventsPage() {
   const artistServices = dbUser.artistProfile.services.map(s => ({
     id: s.id,
     title: s.title,
-    price: s.price,
+    price: Number(s.price),
   }));
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "OPEN": return "border-[#00ffcc] text-[#00ffcc]";
+      case "IN_PROGRESS": return "border-[#f5e642] text-[#f5e642]";
+      case "COMPLETED": return "border-white/30 text-white/30";
+      case "CANCELLED": return "border-red-500/50 text-red-500/50";
+      default: return "border-white/10 text-white/10";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "OPEN": return "Open";
+      case "IN_PROGRESS": return "Ongoing";
+      case "COMPLETED": return "Finished";
+      case "CANCELLED": return "Cancelled";
+      default: return status;
+    }
+  };
 
   return (
     <DashboardLayout role="ARTIST">
       <div className="space-y-8">
         {/* Header */}
-        <div>
-          <p className="text-[#f5e642] font-mono text-xs uppercase tracking-widest mb-1">// opportunities</p>
-          <h1 className="text-4xl font-black text-white">BROWSE EVENTS</h1>
-          <p className="text-white/40 mt-2">Events posted by hirers looking for artists like you.</p>
-        </div>
-
-        {/* Stats */}
-        <div className="border-2 border-white/10 bg-[#111] px-6 py-4 flex items-center gap-4">
-          <span className="text-2xl font-black text-[#f5e642]">{events.length}</span>
-          <span className="text-white/40 uppercase tracking-wider text-sm font-bold">Open opportunities available</span>
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <p className="text-[#f5e642] font-mono text-xs uppercase tracking-widest mb-1">{"// opportunities"}</p>
+            <h1 className="text-4xl font-black text-white">ALL EVENTS</h1>
+            <p className="text-white/40 mt-2">Discover upcoming and ongoing events looking for talent.</p>
+          </div>
+          <Link href="/events" className="text-xs font-black uppercase tracking-widest text-[#f5e642] border-b border-[#f5e642] pb-1 hover:text-white hover:border-white transition-colors">
+            View Public List →
+          </Link>
         </div>
 
         {/* Events List */}
         {events.length === 0 ? (
           <div className="border-2 border-dashed border-white/10 p-16 text-center">
             <Calendar className="h-12 w-12 text-white/20 mx-auto mb-4" />
-            <p className="text-white/30 font-black uppercase tracking-wider text-lg mb-2">No open events</p>
+            <p className="text-white/30 font-black uppercase tracking-wider text-lg mb-2">No events found</p>
             <p className="text-white/20 text-sm">Check back soon — hirers post events regularly.</p>
           </div>
         ) : (
@@ -72,28 +90,34 @@ export default async function ArtistEventsPage() {
             {events.map((event) => {
               const budgetNum = event.budget ? Number(event.budget) : null;
               const hasApplied = appliedEventIds.has(event.id);
+              const isJoinable = event.status === "OPEN" && !hasApplied;
 
               return (
                 <div
                   key={event.id}
                   className="border-2 border-white/10 bg-[#111] p-6 hover:border-[#f5e642] transition-all group"
                 >
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 border border-[#f5e642]/40 text-[#f5e642]">
-                          OPEN
+                      <div className="flex items-center gap-3 mb-3">
+                        <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 border ${getStatusColor(event.status)}`}>
+                          {getStatusLabel(event.status)}
                         </span>
-                        <span className="text-xs text-white/30 font-mono">
+                        {hasApplied && (
+                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 bg-[#f5e642] text-black">
+                            APPLICATION SENT
+                          </span>
+                        )}
+                        <span className="text-[10px] text-white/30 font-mono">
                           {event._count.orders} proposals
                         </span>
                       </div>
                       <h3 className="text-xl font-black text-white group-hover:text-[#f5e642] transition-colors mb-2">
                         {event.title}
                       </h3>
-                      <p className="text-white/50 text-sm line-clamp-2 mb-4">{event.description}</p>
-
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-white/40">
+                      <p className="text-white/50 text-sm line-clamp-2 mb-4 max-w-2xl">{event.description}</p>
+                      
+                      <div className="flex flex-wrap items-center gap-4 text-xs font-bold uppercase tracking-wide text-white/40">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
                           {new Date(event.date).toLocaleDateString("en-US", {
@@ -105,31 +129,31 @@ export default async function ArtistEventsPage() {
                           {event.location}
                         </div>
                         {budgetNum && (
-                          <div className="flex items-center gap-1 text-[#00ffcc] font-bold">
+                          <div className="flex items-center gap-1 text-[#00ffcc]">
                             <DollarSign className="h-3 w-3" />
-                            Budget: ${budgetNum.toLocaleString()}
+                            ${budgetNum.toLocaleString()}
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex flex-col items-end gap-3 flex-shrink-0">
-                      <div className="text-right">
-                        <p className="text-xs text-white/30">Posted by</p>
+                    <div className="flex flex-col items-end gap-3 flex-shrink-0 text-right">
+                      <div>
+                        <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-1">Posted by</p>
                         <p className="text-sm font-bold text-white">
                           {event.hirer.user.fullName || "Hirer"}
                         </p>
                       </div>
-                      {hasApplied ? (
-                        <div className="flex items-center gap-2 text-[#00ffcc] border-2 border-[#00ffcc]/30 bg-[#00ffcc]/10 px-4 py-2 text-xs font-black uppercase tracking-wider">
-                          <CheckCircle2 className="h-4 w-4" /> Applied
-                        </div>
-                      ) : (
+                      {isJoinable ? (
                         <ExpressInterestModal 
                           eventId={event.id} 
                           services={artistServices} 
                           defaultAmount={budgetNum || undefined} 
                         />
+                      ) : (
+                        <div className="flex items-center gap-2 text-white/30 border border-white/10 bg-white/5 px-4 py-2 text-[10px] font-black uppercase tracking-wider">
+                          {hasApplied ? "Applied" : "Registration Closed"}
+                        </div>
                       )}
                     </div>
                   </div>
