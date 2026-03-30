@@ -1,138 +1,121 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Button } from "@/src/components/ui/button";
-import { Input } from "@/src/components/ui/input";
-import { Label } from "@/src/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/src/components/ui/select";
-import { Slider } from "@/src/components/ui/slider";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/src/components/ui/card";
-import { useArtist } from "@/src/contexts/artist-context";
-import type { FilterState } from "@/src/types";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { Filter, X, Loader2 } from "lucide-react";
 
-const categories = ["Singers", "Dancers", "Speakers", "DJs"];
+const categories = [
+  { label: "All",      value: "all"      },
+  { label: "Singer",   value: "SINGERS"  },
+  { label: "Dancer",   value: "DANCERS"  },
+  { label: "DJ",       value: "DJS"      },
+  { label: "Speaker",  value: "SPEAKERS" },
+  { label: "Musician", value: "MUSICIANS"},
+  { label: "Magician", value: "MAGICIANS"},
+  { label: "Other",    value: "OTHERS"   },
+];
 
 export function FilterSidebar() {
-  const { filters, updateFilters } = useArtist();
-  const [localFilters, setLocalFilters] = useState<FilterState>(filters);
+  const router      = useRouter();
+  const pathname    = usePathname();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
 
-  //Filtering Categories if coming from home page.
-  useEffect(() => {
-    const category = searchParams.get("category");
-    if (category) {
-      setLocalFilters({ ...localFilters, category });
-      updateFilters({ ...localFilters, category });
-    } else {
-      setLocalFilters({ ...localFilters, category: "" });
-      updateFilters({ ...localFilters, category: "" });
-    }
-  }, []);
+  const [isOpen,    setIsOpen]    = useState(false);
+  const [category,  setCategory]  = useState(searchParams.get("category") || "all");
+  const [minPrice,  setMinPrice]  = useState(searchParams.get("minPrice") || "0");
+  const [maxPrice,  setMaxPrice]  = useState(searchParams.get("maxPrice") || "3000");
 
-  const handleApplyFilters = () => {
-    updateFilters(localFilters);
+  const apply = () => {
+    startTransition(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (category && category !== "all") params.set("category", category); else params.delete("category");
+      params.set("minPrice", minPrice);
+      params.set("maxPrice", maxPrice);
+      router.push(`${pathname}?${params.toString()}`);
+    });
   };
 
-  const handleResetFilters = () => {
-    const resetFilters: FilterState = {
-      category: "",
-      location: "",
-      priceRange: [0, 3000],
-    };
-    setLocalFilters(resetFilters);
-    updateFilters(resetFilters);
+  const reset = () => {
+    setCategory("all");
+    setMinPrice("0");
+    setMaxPrice("3000");
+    startTransition(() => {
+      router.push(pathname);
+    });
   };
 
   return (
-    <Card className="sticky top-20">
-      <CardHeader>
-        <CardTitle className="text-lg">Filters</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <Label htmlFor="category">Category</Label>
-          <Select
-            value={localFilters.category}
-            onValueChange={(value) => {
-              value === "All Categories"
-                ? setLocalFilters((prev) => ({ ...prev, category: "" }))
-                : setLocalFilters((prev) => ({ ...prev, category: value }));
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="All Categories" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All Categories">All Categories</SelectItem>
-              {categories.map((category) => (
-                <SelectItem key={category} value={category}>
-                  {category}
-                </SelectItem>
+    <div className="border-2 border-white/10 bg-[#111] sticky top-20">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-white/10">
+        <p className="font-black text-white uppercase tracking-wider flex items-center gap-2">
+          <Filter className="h-4 w-4 text-[#f5e642]" />
+          Filters
+        </p>
+        <button className="md:hidden text-white/40 hover:text-white transition-colors" onClick={() => setIsOpen(!isOpen)}>
+          {isOpen ? <X className="h-4 w-4" /> : <Filter className="h-4 w-4" />}
+        </button>
+      </div>
+
+      <div className={`${isOpen ? "block" : "hidden"} md:block`}>
+        <div className="p-4 space-y-6">
+          {/* Category */}
+          <div className="space-y-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-white/40">Category</p>
+            <div className="flex flex-col gap-1">
+              {categories.map((c) => (
+                <button
+                  key={c.value}
+                  onClick={() => setCategory(c.value)}
+                  className={`text-left px-3 py-2 text-sm font-bold uppercase tracking-wide transition-colors border ${
+                    category === c.value
+                      ? "border-[#f5e642] bg-[#f5e642]/10 text-[#f5e642]"
+                      : "border-transparent text-white/40 hover:text-white hover:border-white/20"
+                  }`}
+                >
+                  {c.label}
+                </button>
               ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="location">Location</Label>
-          <Input
-            id="location"
-            placeholder="Enter city or state"
-            value={localFilters.location}
-            onChange={(e) =>
-              setLocalFilters((prev) => ({ ...prev, location: e.target.value }))
-            }
-          />
-        </div>
-
-        <div className="space-y-3">
-          <Label>Price Range</Label>
-          <div className="px-2">
-            <Slider
-              value={localFilters.priceRange}
-              onValueChange={(value) =>
-                setLocalFilters((prev) => ({
-                  ...prev,
-                  priceRange: value as [number, number],
-                }))
-              }
-              max={3000}
-              min={0}
-              step={100}
-              className="w-full"
-            />
+            </div>
           </div>
-          <div className="flex justify-between text-sm text-muted-foreground">
-            <span>${localFilters.priceRange[0]}</span>
-            <span>${localFilters.priceRange[1]}</span>
+
+          {/* Price Range */}
+          <div className="space-y-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-white/40">Price Range ($)</p>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="text-xs text-white/30 mb-1">Min</p>
+                <input
+                  type="number" value={minPrice} min={0} step={100}
+                  onChange={(e) => setMinPrice(e.target.value)}
+                  className="w-full bg-[#0d0d0d] border-2 border-white/10 text-white px-3 py-2 text-sm focus:border-[#f5e642] outline-none transition-colors"
+                />
+              </div>
+              <div>
+                <p className="text-xs text-white/30 mb-1">Max</p>
+                <input
+                  type="number" value={maxPrice} min={0} step={100}
+                  onChange={(e) => setMaxPrice(e.target.value)}
+                  className="w-full bg-[#0d0d0d] border-2 border-white/10 text-white px-3 py-2 text-sm focus:border-[#f5e642] outline-none transition-colors"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="space-y-2 border-t border-white/10 pt-4">
+            <button onClick={apply} disabled={isPending}
+              className="flex justify-center items-center gap-2 w-full py-3 font-black text-sm uppercase tracking-wider bg-[#f5e642] text-black border-2 border-[#f5e642] hover:bg-transparent hover:text-[#f5e642] transition-colors disabled:opacity-50">
+              {isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Fetching...</> : "Apply Filters"}
+            </button>
+            <button onClick={reset} disabled={isPending}
+              className="w-full py-3 font-bold text-sm uppercase tracking-wider border-2 border-white/10 text-white/50 hover:border-white/30 hover:text-white transition-colors disabled:opacity-50">
+              Reset
+            </button>
           </div>
         </div>
-
-        <div className="space-y-2">
-          <Button onClick={handleApplyFilters} className="w-full">
-            Apply Filters
-          </Button>
-          <Button
-            onClick={handleResetFilters}
-            variant="outline"
-            className="w-full"
-          >
-            Reset Filters
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

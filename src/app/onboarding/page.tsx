@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { Label } from "@/src/components/ui/label";
@@ -21,12 +21,14 @@ import {
   CardTitle,
 } from "@/src/components/ui/card";
 import { Progress } from "@/src/components/ui/progress";
-import { ArrowLeft, ArrowRight, CheckCircle, Upload } from "lucide-react";
-import { useArtist } from "@/src/contexts/artist-context";
+import { ArrowLeft, ArrowRight, CheckCircle, Upload, Briefcase } from "lucide-react";
+
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { cn } from "@/src/lib/utils";
+import { useUser } from "@clerk/nextjs";
 
-const categories = ["Singers", "Dancers", "Speakers", "DJs"];
+const categories = ["SINGERS", "DANCERS", "DJS", "SPEAKERS", "MUSICIANS", "MAGICIANS", "OTHERS"];
 const languages = [
   "English",
   "Spanish",
@@ -50,7 +52,11 @@ const feeRanges = [
   "$2000+",
 ];
 
+import { onboardUser } from "@/src/lib/actions/user-actions";
+import { useArtist } from "@/src/contexts/artist-context";
+
 interface FormData {
+  role: "ARTIST" | "HIRER";
   name: string;
   bio: string;
   location: string;
@@ -66,9 +72,10 @@ interface FormErrors {
 }
 
 export default function OnboardingPage() {
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(0); // 0 is Role Selection
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [formData, setFormData] = useState<FormData>({
+    role: "ARTIST",
     name: "",
     bio: "",
     location: "",
@@ -81,6 +88,19 @@ export default function OnboardingPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const { addArtist } = useArtist();
   const router = useRouter();
+  const { user, isLoaded } = useUser();
+
+  useEffect(() => {
+    if (isLoaded && user && (user.publicMetadata as any)?.role) {
+      router.push("/dashboard");
+    }
+  }, [user, isLoaded, router]);
+
+  useEffect(() => {
+    if (isLoaded && user && !formData.name) {
+      setFormData(prev => ({ ...prev, name: user.fullName || "" }));
+    }
+  }, [user, isLoaded, formData.name]);
 
   const totalSteps = 4;
   const progress = (currentStep / totalSteps) * 100;
@@ -89,22 +109,28 @@ export default function OnboardingPage() {
     const newErrors: FormErrors = {};
 
     switch (step) {
+      case 0:
+        if (!formData.role) newErrors.role = "Role is required";
+        break;
       case 1:
         if (!formData.name.trim()) newErrors.name = "Name is required";
-        if (!formData.bio.trim()) newErrors.bio = "Bio is required";
+        if (formData.role === "ARTIST") {
+          if (!formData.bio.trim()) newErrors.bio = "Bio is required";
+        }
         if (!formData.location.trim())
           newErrors.location = "Location is required";
         break;
       case 2:
-        if (formData.categories.length === 0)
+        if (formData.role === "ARTIST" && formData.categories.length === 0)
           newErrors.categories = "Select at least one category";
         break;
       case 3:
-        if (formData.languages.length === 0)
+        if (formData.role === "ARTIST" && formData.languages.length === 0)
           newErrors.languages = "Select at least one language";
         break;
       case 4:
-        if (!formData.feeRange) newErrors.feeRange = "Fee range is required";
+        if (formData.role === "ARTIST" && !formData.feeRange) 
+          newErrors.feeRange = "Fee range is required";
         break;
     }
 
@@ -114,25 +140,51 @@ export default function OnboardingPage() {
 
   const handleNext = () => {
     if (validateStep(currentStep)) {
-      setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
+      if (formData.role === "HIRER" && currentStep === 1) {
+        handleSubmit(); // Hirers have fewer steps
+      } else {
+        setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
+      }
     }
   };
 
   const handlePrevious = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 1));
+    setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validateStep(currentStep)) {
-      const cityFromLocation = formData.location.split(",")[0].trim();
-      addArtist({
-        ...formData,
-        city: cityFromLocation,
-      });
-      setIsSubmitted(true);
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 2000);
+      try {
+        const cityFromLocation = formData.location.split(",")[0].trim();
+        
+        // Use Server Action for persistence
+        await onboardUser({
+           role: formData.role,
+           name: formData.name,
+           bio: formData.bio,
+           location: formData.location,
+           categories: formData.categories,
+           languages: formData.languages,
+           feeRange: formData.feeRange
+        });
+
+        if (formData.role === "ARTIST") {
+          addArtist({
+            ...formData,
+            city: cityFromLocation,
+          });
+        }
+        
+        setIsSubmitted(true);
+        setTimeout(() => {
+          // Use window.location.href for a full reload to ensure the session token is renewed
+          // and the middleware can see the updated role.
+          window.location.href = "/dashboard";
+        }, 2000);
+      } catch (error) {
+        console.error("Onboarding failed", error);
+        setErrors({ submit: "Failed to save profile. Please try again." });
+      }
     }
   };
 
@@ -200,13 +252,15 @@ export default function OnboardingPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              {currentStep === 1 && "Basic Information"}
+              {currentStep === 0 && "Choose Your Role"}
+              {currentStep === 1 && (formData.role === "ARTIST" ? "Basic Information" : "Hirer Details")}
               {currentStep === 2 && "Categories"}
               {currentStep === 3 && "Languages"}
               {currentStep === 4 && "Pricing & Profile"}
             </CardTitle>
             <CardDescription>
-              {currentStep === 1 && "Tell us about yourself and your location"}
+              {currentStep === 0 && "Are you joining to showcase your talent or to hire professionals?"}
+              {currentStep === 1 && (formData.role === "ARTIST" ? "Tell us about yourself and your location" : "Tell us about your organization/event needs")}
               {currentStep === 2 &&
                 "Select the categories that best describe your talents"}
               {currentStep === 3 && "What languages do you speak?"}
@@ -224,6 +278,35 @@ export default function OnboardingPage() {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3 }}
               >
+                {currentStep === 0 && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, role: "ARTIST" }))}
+                      className={cn(
+                        "flex flex-col items-center justify-center p-6 border-2 rounded-xl transition-all hover:border-primary",
+                        formData.role === "ARTIST" ? "border-primary bg-primary/5 shadow-md" : "border-muted"
+                      )}
+                    >
+                      <Briefcase className="h-10 w-10 mb-3 text-purple-600" />
+                      <span className="font-bold">I am an Artist</span>
+                      <span className="text-xs text-muted-foreground mt-1">Showcase my talent</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, role: "HIRER" }))}
+                      className={cn(
+                        "flex flex-col items-center justify-center p-6 border-2 rounded-xl transition-all hover:border-primary",
+                        formData.role === "HIRER" ? "border-primary bg-primary/5 shadow-md" : "border-muted"
+                      )}
+                    >
+                      <CheckCircle className="h-10 w-10 mb-3 text-pink-600" />
+                      <span className="font-bold">I am a Hirer</span>
+                      <span className="text-xs text-muted-foreground mt-1">Book talent for events</span>
+                    </button>
+                  </div>
+                )}
+
                 {currentStep === 1 && (
                   <div className="space-y-4">
                     <div>
