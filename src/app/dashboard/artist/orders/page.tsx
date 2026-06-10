@@ -8,28 +8,21 @@ import {
   CardDescription,
 } from "@/src/components/ui/card";
 import { ShoppingBag, Clock, CheckCircle, XCircle } from "lucide-react";
-import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { Badge } from "@/src/components/ui/badge";
 import OrderActions from "./OrderActions";
+import { getAuthUser } from "@/src/lib/auth";
 
 export default async function ArtistOrdersPage() {
-  const user = await currentUser();
-  if (!user) redirect("/sign-in");
-
-  const dbUser = await prisma.user.findUnique({
-    where: { clerkId: user.id },
-    include: { artistProfile: true },
-  });
-
-  if (!dbUser?.artistProfile) redirect("/onboarding");
+  const { dbUser: db } = await getAuthUser();
+  if (!db?.artistProfile) redirect("/onboarding");
 
   const orders = await prisma.order.findMany({
-    where: { sellerId: dbUser.artistProfile.id },
+    where: { sellerId: db.artistProfile.id },
     include: {
-      buyer: true,
-      service: true,
-      event: true,
+      buyer: { select: { fullName: true } },
+      service: { select: { title: true } },
+      event: { select: { title: true } },
     },
     orderBy: { createdAt: "desc" },
   });

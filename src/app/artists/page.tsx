@@ -5,6 +5,9 @@ import { prisma } from "@/src/lib/prisma";
 import { Prisma, ServiceCategory } from "@prisma/client";
 import type { Artist } from "@/src/types";
 
+// Cache this public page for 30 seconds — most visits skip the database entirely
+export const revalidate = 30;
+
 interface PageProps {
   searchParams: Promise<{
     category?: string;
@@ -59,15 +62,12 @@ export default async function ArtistListingPage({ searchParams }: PageProps) {
     prisma.artistProfile.findMany({
       where: artistWhere,
       include: {
-        user: true,
+        user: { select: { fullName: true, imageUrl: true } },
         services: {
-          // removed take: 1 so we get all matching services
           where: serviceWhere,
+          select: { price: true, category: true },
           orderBy: { price: "asc" }
         },
-        _count: {
-          select: { services: true }
-        }
       },
       skip,
       take: limit,

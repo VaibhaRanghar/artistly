@@ -1,6 +1,6 @@
-import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { prisma } from "@/src/lib/prisma";
+import { getAuthUser } from "@/src/lib/auth";
 import { DashboardLayout } from "@/src/components/dashboard/dashboard-layout";
 import { Briefcase, DollarSign, Clock, Plus } from "lucide-react";
 import Link from "next/link";
@@ -8,14 +8,15 @@ import GigCreateModal from "./GigCreateModal";
 import GigManageCard from "./GigManageCard";
 
 export default async function ArtistGigsPage() {
-  const user = await currentUser();
-  if (!user) redirect("/sign-in");
+  const { dbUser: db } = await getAuthUser();
+  if (!db?.artistProfile) redirect("/onboarding");
 
   const dbUser = await prisma.user.findUnique({
-    where: { clerkId: user.id },
-    include: {
+    where: { id: db.id },
+    select: {
       artistProfile: {
-        include: {
+        select: {
+          id: true,
           services: { orderBy: { createdAt: "desc" } },
         },
       },

@@ -1,37 +1,46 @@
 import { prisma } from "@/src/lib/prisma";
-import { DashboardLayout } from "@/src/components/dashboard/dashboard-layout";
 import { Calendar, MapPin, DollarSign, Search, Filter } from "lucide-react";
-import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import ExpressInterestModal from "../dashboard/artist/events/ExpressInterestModal";
+import { getAuthUser } from "@/src/lib/auth";
 
-export default async function PublicEventsPage() {
-  const user = await currentUser();
-  if (!user) redirect("/sign-in");
+interface PageProps {
+  searchParams: Promise<{ page?: string }>;
+}
 
-  const dbUser = await prisma.user.findUnique({
-    where: { clerkId: user.id },
-    include: {
-      artistProfile: {
-        include: { services: true },
+export default async function PublicEventsPage({ searchParams }: PageProps) {
+  const [{ dbUser }, params] = await Promise.all([getAuthUser(), searchParams]);
+
+  const page = Math.max(1, parseInt(params.page || "1"));
+  const limit = 20;
+  const skip = (page - 1) * limit;
+
+  if (!dbUser?.artistProfile) redirect("/onboarding");
+
+  // Fetch services for the express interest modal
+  const profile = await prisma.artistProfile.findUnique({
+    where: { id: dbUser.artistProfile.id },
+    select: {
+      id: true,
+      services: {
+        select: { id: true, title: true, price: true, category: true },
       },
     },
   });
 
-  if (!dbUser?.artistProfile) redirect("/onboarding");
-
-  // Fetch ALL events as requested
   const events = await prisma.event.findMany({
     include: {
       hirer: {
-        include: { user: true },
+        select: { user: { select: { fullName: true } } },
       },
       orders: {
-        where: { sellerId: dbUser.id },
+        where: { sellerId: dbUser.artistProfile.id },
+        select: { id: true },
       },
     },
     orderBy: { date: "desc" },
+    skip,
+    take: limit,
   });
 
   const getStatusColor = (status: string) => {
@@ -155,7 +164,7 @@ export default async function PublicEventsPage() {
                           eventId={event.id}
                           eventTitle={event.title}
                           hirerId={event.hirerId}
-                          services={dbUser.artistProfile!.services.map((s) => ({
+                          services={(profile?.services || []).map((s:any) => ({
                             ...s,
                             price: Number(s.price),
                           }))}
@@ -176,3 +185,4 @@ export default async function PublicEventsPage() {
     </div>
   );
 }
+
