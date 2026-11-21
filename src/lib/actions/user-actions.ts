@@ -1,6 +1,6 @@
 "use server";
 
-import { clerkClient, currentUser } from "@clerk/nextjs/server";
+import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/src/lib/prisma";
 import { Role, ServiceCategory } from "@prisma/client";
 import { redirect } from "next/navigation";
@@ -101,11 +101,11 @@ const createGigSchema = z.object({
 export async function createGig(formData: z.infer<typeof createGigSchema>) {
   try {
     const validatedData = createGigSchema.parse(formData);
-    const user = await currentUser();
-    if (!user) throw new Error("Unauthorized");
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: userId },
       include: { artistProfile: true },
     });
 
@@ -143,11 +143,11 @@ const createEventSchema = z.object({
 export async function createEvent(formData: z.infer<typeof createEventSchema>) {
   try {
     const validatedData = createEventSchema.parse(formData);
-    const user = await currentUser();
-    if (!user) throw new Error("Unauthorized");
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: userId },
       include: { hirerProfile: true },
     });
 
@@ -182,15 +182,17 @@ const createOrderSchema = z.object({
 export async function createOrder(formData: z.infer<typeof createOrderSchema>) {
   try {
     const validatedData = createOrderSchema.parse(formData);
-    const user = await currentUser();
-    if (!user) throw new Error("Unauthorized");
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false, error: "UNAUTHORIZED" };
+    }
 
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: userId },
     });
 
     if (!dbUser) {
-      throw new Error("User not found");
+      return { success: false, error: "NOT_ONBOARDED" };
     }
 
     const service = await prisma.service.findUnique({
@@ -199,7 +201,7 @@ export async function createOrder(formData: z.infer<typeof createOrderSchema>) {
     });
 
     if (!service) {
-      throw new Error("Service not found");
+      return { success: false, error: "Service not found" };
     }
 
     await prisma.order.create({
@@ -217,7 +219,10 @@ export async function createOrder(formData: z.infer<typeof createOrderSchema>) {
     return { success: true };
   } catch (error) {
     console.error("[createOrder] Error:", error);
-    throw new Error("Failed to create order");
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to create order",
+    };
   }
 }
 
@@ -233,11 +238,11 @@ export async function createReview(
 ) {
   try {
     const validatedData = createReviewSchema.parse(formData);
-    const user = await currentUser();
-    if (!user) throw new Error("Unauthorized");
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: userId },
     });
 
     if (!dbUser) throw new Error("User not found");
@@ -304,11 +309,11 @@ export async function updateArtistProfile(
 ) {
   try {
     const validatedData = updateProfileSchema.parse(formData);
-    const user = await currentUser();
-    if (!user) throw new Error("Unauthorized");
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: userId },
       include: { artistProfile: true },
     });
 
@@ -346,11 +351,11 @@ export async function expressInterest(
 ) {
   try {
     const validatedData = expressInterestSchema.parse(formData);
-    const user = await currentUser();
-    if (!user) throw new Error("Unauthorized");
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: userId },
       include: { artistProfile: true },
     });
 
@@ -412,11 +417,11 @@ export async function updateOrderStatus(
 ) {
   try {
     const validatedData = updateOrderStatusSchema.parse(formData);
-    const user = await currentUser();
-    if (!user) throw new Error("Unauthorized");
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: userId },
       include: { artistProfile: true, hirerProfile: true },
     });
 
@@ -488,11 +493,11 @@ const editServiceSchema = z.object({
 export async function editService(formData: z.infer<typeof editServiceSchema>) {
   try {
     const validatedData = editServiceSchema.parse(formData);
-    const user = await currentUser();
-    if (!user) throw new Error("Unauthorized");
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: userId },
       include: { artistProfile: true },
     });
 
@@ -528,11 +533,11 @@ export async function editService(formData: z.infer<typeof editServiceSchema>) {
 
 export async function deleteService(serviceId: string) {
   try {
-    const user = await currentUser();
-    if (!user) throw new Error("Unauthorized");
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: userId },
       include: { artistProfile: true },
     });
 
@@ -570,11 +575,11 @@ const editEventSchema = z.object({
 export async function editEvent(formData: z.infer<typeof editEventSchema>) {
   try {
     const validatedData = editEventSchema.parse(formData);
-    const user = await currentUser();
-    if (!user) throw new Error("Unauthorized");
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: userId },
       include: { hirerProfile: true },
     });
 
@@ -610,11 +615,11 @@ export async function editEvent(formData: z.infer<typeof editEventSchema>) {
 
 export async function deleteEvent(eventId: string) {
   try {
-    const user = await currentUser();
-    if (!user) throw new Error("Unauthorized");
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: userId },
       include: { hirerProfile: true },
     });
 

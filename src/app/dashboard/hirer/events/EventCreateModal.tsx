@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createEvent } from "@/src/lib/actions/user-actions";
 import { Plus, X } from "lucide-react";
 
 export default function EventCreateModal() {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
 
@@ -22,7 +24,7 @@ export default function EventCreateModal() {
       });
       if (result.success) {
         setIsOpen(false);
-        window.location.reload();
+        router.refresh();
       }
     } catch (error) {
       console.error(error);
