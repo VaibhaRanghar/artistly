@@ -1,6 +1,6 @@
 "use server";
 
-import { clerkClient, currentUser } from "@clerk/nextjs/server";
+import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/src/lib/prisma";
 import { Role, ServiceCategory } from "@prisma/client";
 import { redirect } from "next/navigation";
@@ -26,13 +26,6 @@ export async function onboardUser(data: z.infer<typeof onboardSchema>) {
     if (!user) {
       throw new Error("Unauthorized");
     }
-
-    const client = await clerkClient();
-    await client.users.updateUserMetadata(user.id, {
-      publicMetadata: {
-        role: validatedData.role,
-      },
-    });
 
     const dbUser = await prisma.user.upsert({
       where: { clerkId: user.id },
@@ -108,11 +101,11 @@ const createGigSchema = z.object({
 export async function createGig(formData: z.infer<typeof createGigSchema>) {
   try {
     const validatedData = createGigSchema.parse(formData);
-    const user = await currentUser();
-    if (!user) throw new Error("Unauthorized");
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: userId },
       include: { artistProfile: true },
     });
 
@@ -150,11 +143,11 @@ const createEventSchema = z.object({
 export async function createEvent(formData: z.infer<typeof createEventSchema>) {
   try {
     const validatedData = createEventSchema.parse(formData);
-    const user = await currentUser();
-    if (!user) throw new Error("Unauthorized");
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: userId },
       include: { hirerProfile: true },
     });
 
@@ -189,15 +182,17 @@ const createOrderSchema = z.object({
 export async function createOrder(formData: z.infer<typeof createOrderSchema>) {
   try {
     const validatedData = createOrderSchema.parse(formData);
-    const user = await currentUser();
-    if (!user) throw new Error("Unauthorized");
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false, error: "UNAUTHORIZED" };
+    }
 
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: userId },
     });
 
     if (!dbUser) {
-      throw new Error("User not found");
+      return { success: false, error: "NOT_ONBOARDED" };
     }
 
     const service = await prisma.service.findUnique({
@@ -206,7 +201,7 @@ export async function createOrder(formData: z.infer<typeof createOrderSchema>) {
     });
 
     if (!service) {
-      throw new Error("Service not found");
+      return { success: false, error: "Service not found" };
     }
 
     await prisma.order.create({
@@ -224,7 +219,10 @@ export async function createOrder(formData: z.infer<typeof createOrderSchema>) {
     return { success: true };
   } catch (error) {
     console.error("[createOrder] Error:", error);
-    throw new Error("Failed to create order");
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to create order",
+    };
   }
 }
 
@@ -235,14 +233,16 @@ const createReviewSchema = z.object({
   comment: z.string().optional(),
 });
 
-export async function createReview(formData: z.infer<typeof createReviewSchema>) {
+export async function createReview(
+  formData: z.infer<typeof createReviewSchema>,
+) {
   try {
     const validatedData = createReviewSchema.parse(formData);
-    const user = await currentUser();
-    if (!user) throw new Error("Unauthorized");
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: userId },
     });
 
     if (!dbUser) throw new Error("User not found");
@@ -252,7 +252,11 @@ export async function createReview(formData: z.infer<typeof createReviewSchema>)
       where: { id: validatedData.orderId },
     });
 
-    if (!order || order.buyerId !== dbUser.id || order.serviceId !== validatedData.serviceId) {
+    if (
+      !order ||
+      order.buyerId !== dbUser.id ||
+      order.serviceId !== validatedData.serviceId
+    ) {
       throw new Error("Invalid order or unauthorized to review this service");
     }
 
@@ -275,9 +279,10 @@ export async function createReview(formData: z.infer<typeof createReviewSchema>)
       where: { service: { artistId: order.sellerId } },
       select: { rating: true },
     });
-    
+
     const newCount = allReviews.length;
-    const newRating = allReviews.reduce((acc, r) => acc + r.rating, 0) / newCount;
+    const newRating =
+      allReviews.reduce((acc, r) => acc + r.rating, 0) / newCount;
 
     await prisma.artistProfile.update({
       where: { id: order.sellerId },
@@ -299,14 +304,16 @@ const updateProfileSchema = z.object({
   skills: z.array(z.string()).optional(),
 });
 
-export async function updateArtistProfile(formData: z.infer<typeof updateProfileSchema>) {
+export async function updateArtistProfile(
+  formData: z.infer<typeof updateProfileSchema>,
+) {
   try {
     const validatedData = updateProfileSchema.parse(formData);
-    const user = await currentUser();
-    if (!user) throw new Error("Unauthorized");
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: userId },
       include: { artistProfile: true },
     });
 
@@ -339,14 +346,16 @@ const expressInterestSchema = z.object({
   requirements: z.string().optional(),
 });
 
-export async function expressInterest(formData: z.infer<typeof expressInterestSchema>) {
+export async function expressInterest(
+  formData: z.infer<typeof expressInterestSchema>,
+) {
   try {
     const validatedData = expressInterestSchema.parse(formData);
-    const user = await currentUser();
-    if (!user) throw new Error("Unauthorized");
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: userId },
       include: { artistProfile: true },
     });
 
@@ -354,7 +363,7 @@ export async function expressInterest(formData: z.infer<typeof expressInterestSc
 
     const event = await prisma.event.findUnique({
       where: { id: validatedData.eventId },
-      include: { hirer: true }
+      include: { hirer: true },
     });
 
     if (!event) throw new Error("Event not found");
@@ -363,7 +372,7 @@ export async function expressInterest(formData: z.infer<typeof expressInterestSc
       where: {
         eventId: validatedData.eventId,
         sellerId: dbUser.artistProfile.id,
-      }
+      },
     });
 
     if (existing) {
@@ -377,11 +386,12 @@ export async function expressInterest(formData: z.infer<typeof expressInterestSc
         sellerId: dbUser.artistProfile.id,
         eventId: event.id,
         amount: validatedData.amount,
-        requirements: validatedData.requirements || "Artist expressed interest in event.",
+        requirements:
+          validatedData.requirements || "Artist expressed interest in event.",
         status: "PENDING",
       },
     });
-    
+
     revalidatePath("/dashboard/artist/events");
     return { success: true };
   } catch (error) {
@@ -392,31 +402,41 @@ export async function expressInterest(formData: z.infer<typeof expressInterestSc
 
 const updateOrderStatusSchema = z.object({
   orderId: z.string(),
-  status: z.enum(["ACCEPTED", "IN_PROGRESS", "DELIVERED", "COMPLETED", "CANCELLED", "REJECTED"]),
+  status: z.enum([
+    "ACCEPTED",
+    "IN_PROGRESS",
+    "DELIVERED",
+    "COMPLETED",
+    "CANCELLED",
+    "REJECTED",
+  ]),
 });
 
-export async function updateOrderStatus(formData: z.infer<typeof updateOrderStatusSchema>) {
+export async function updateOrderStatus(
+  formData: z.infer<typeof updateOrderStatusSchema>,
+) {
   try {
     const validatedData = updateOrderStatusSchema.parse(formData);
-    const user = await currentUser();
-    if (!user) throw new Error("Unauthorized");
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: userId },
       include: { artistProfile: true, hirerProfile: true },
     });
 
     if (!dbUser) throw new Error("User not found");
 
     const order = await prisma.order.findUnique({
-      where: { id: validatedData.orderId }
+      where: { id: validatedData.orderId },
     });
 
     if (!order) throw new Error("Order not found");
-    
-    const isSeller = dbUser.artistProfile && order.sellerId === dbUser.artistProfile.id;
+
+    const isSeller =
+      dbUser.artistProfile && order.sellerId === dbUser.artistProfile.id;
     const isBuyer = order.buyerId === dbUser.id; // Note: buyerId is referencing User.id
-    
+
     if (!isSeller && !isBuyer) {
       throw new Error("Unauthorized to update this order");
     }
@@ -426,8 +446,11 @@ export async function updateOrderStatus(formData: z.infer<typeof updateOrderStat
     if (validatedData.status === "ACCEPTED") prismaStatus = "IN_PROGRESS"; // ACCEPTED is not in enum
 
     let updateData: any = { status: prismaStatus };
-    
-    if (validatedData.status === "ACCEPTED" || validatedData.status === "IN_PROGRESS") {
+
+    if (
+      validatedData.status === "ACCEPTED" ||
+      validatedData.status === "IN_PROGRESS"
+    ) {
       updateData.acceptedAt = new Date();
     } else if (validatedData.status === "DELIVERED") {
       updateData.deliveredAt = new Date();
@@ -454,7 +477,15 @@ const editServiceSchema = z.object({
   title: z.string().min(5),
   description: z.string().min(20),
   price: z.number().positive(),
-  category: z.enum(["SINGERS", "DANCERS", "DJS", "SPEAKERS", "MUSICIANS", "MAGICIANS", "OTHERS"]),
+  category: z.enum([
+    "SINGERS",
+    "DANCERS",
+    "DJS",
+    "SPEAKERS",
+    "MUSICIANS",
+    "MAGICIANS",
+    "OTHERS",
+  ]),
   deliveryTime: z.number().positive(),
   revisionCount: z.number().min(0).default(0),
 });
@@ -462,22 +493,23 @@ const editServiceSchema = z.object({
 export async function editService(formData: z.infer<typeof editServiceSchema>) {
   try {
     const validatedData = editServiceSchema.parse(formData);
-    const user = await currentUser();
-    if (!user) throw new Error("Unauthorized");
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: userId },
       include: { artistProfile: true },
     });
 
     if (!dbUser?.artistProfile) throw new Error("Artist profile not found");
 
     const existingService = await prisma.service.findUnique({
-      where: { id: validatedData.id }
+      where: { id: validatedData.id },
     });
 
     if (!existingService) throw new Error("Service not found");
-    if (existingService.artistId !== dbUser.artistProfile.id) throw new Error("Unauthorized to edit service");
+    if (existingService.artistId !== dbUser.artistProfile.id)
+      throw new Error("Unauthorized to edit service");
 
     await prisma.service.update({
       where: { id: validatedData.id },
@@ -501,25 +533,26 @@ export async function editService(formData: z.infer<typeof editServiceSchema>) {
 
 export async function deleteService(serviceId: string) {
   try {
-    const user = await currentUser();
-    if (!user) throw new Error("Unauthorized");
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: userId },
       include: { artistProfile: true },
     });
 
     if (!dbUser?.artistProfile) throw new Error("Artist profile not found");
 
     const existingService = await prisma.service.findUnique({
-      where: { id: serviceId }
+      where: { id: serviceId },
     });
 
     if (!existingService) throw new Error("Service not found");
-    if (existingService.artistId !== dbUser.artistProfile.id) throw new Error("Unauthorized to delete service");
+    if (existingService.artistId !== dbUser.artistProfile.id)
+      throw new Error("Unauthorized to delete service");
 
     await prisma.service.delete({
-      where: { id: serviceId }
+      where: { id: serviceId },
     });
 
     revalidatePath("/dashboard/artist/gigs");
@@ -542,22 +575,23 @@ const editEventSchema = z.object({
 export async function editEvent(formData: z.infer<typeof editEventSchema>) {
   try {
     const validatedData = editEventSchema.parse(formData);
-    const user = await currentUser();
-    if (!user) throw new Error("Unauthorized");
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: userId },
       include: { hirerProfile: true },
     });
 
     if (!dbUser?.hirerProfile) throw new Error("Hirer profile not found");
 
     const existingEvent = await prisma.event.findUnique({
-      where: { id: validatedData.id }
+      where: { id: validatedData.id },
     });
 
     if (!existingEvent) throw new Error("Event not found");
-    if (existingEvent.hirerId !== dbUser.hirerProfile.id) throw new Error("Unauthorized");
+    if (existingEvent.hirerId !== dbUser.hirerProfile.id)
+      throw new Error("Unauthorized");
 
     await prisma.event.update({
       where: { id: validatedData.id },
@@ -581,25 +615,26 @@ export async function editEvent(formData: z.infer<typeof editEventSchema>) {
 
 export async function deleteEvent(eventId: string) {
   try {
-    const user = await currentUser();
-    if (!user) throw new Error("Unauthorized");
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: userId },
       include: { hirerProfile: true },
     });
 
     if (!dbUser?.hirerProfile) throw new Error("Hirer profile not found");
 
     const existingEvent = await prisma.event.findUnique({
-      where: { id: eventId }
+      where: { id: eventId },
     });
 
     if (!existingEvent) throw new Error("Event not found");
-    if (existingEvent.hirerId !== dbUser.hirerProfile.id) throw new Error("Unauthorized");
+    if (existingEvent.hirerId !== dbUser.hirerProfile.id)
+      throw new Error("Unauthorized");
 
     await prisma.event.delete({
-      where: { id: eventId }
+      where: { id: eventId },
     });
 
     revalidatePath("/dashboard/hirer/events");

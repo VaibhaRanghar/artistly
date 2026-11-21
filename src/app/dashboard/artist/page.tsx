@@ -6,47 +6,38 @@ import {
   CardTitle,
 } from "@/src/components/ui/card";
 import { Briefcase, ShoppingBag, Star, TrendingUp } from "lucide-react";
-import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/src/lib/prisma";
 import { redirect } from "next/navigation";
+import { getAuthUser } from "@/src/lib/auth";
 
 export default async function ArtistDashboard() {
-  const user = await currentUser();
-  if (!user) redirect("/sign-in");
+  const { dbUser: baseUser } = await getAuthUser();
+  if (!baseUser?.artistProfile) redirect("/onboarding");
 
+  // Re-fetch with the _count includes needed for this specific page's stats
   const dbUser = await prisma.user.findUnique({
-    where: { clerkId: user.id },
+    where: { id: baseUser.id },
     include: {
       artistProfile: {
         include: {
-          _count: {
-            select: {
-              services: true,
-              sellerOrders: true,
-            },
-          },
+          _count: { select: { services: true, sellerOrders: true } },
         },
       },
     },
   });
 
-  if (!dbUser?.artistProfile) {
-    redirect("/onboarding");
-  }
+  if (!dbUser?.artistProfile) redirect("/onboarding");
 
-  // Calculate real earnings from COMPLETED orders
-  const completedOrders = await prisma.order.findMany({
+  // Use aggregate instead of findMany + reduce — runs in DB, not in JS
+  const earningsResult = await prisma.order.aggregate({
     where: {
-      sellerId: dbUser.id,
+      sellerId: dbUser.artistProfile.id,
       status: "COMPLETED",
     },
-    select: { amount: true },
+    _sum: { amount: true },
   });
 
-  const totalEarnings = completedOrders.reduce(
-    (sum, order) => sum + Number(order.amount),
-    0,
-  );
+  const totalEarnings = Number(earningsResult._sum.amount) || 0;
 
   const stats = {
     earnings: totalEarnings,

@@ -53,7 +53,7 @@ model User {
 
   artistProfile ArtistProfile?
   hirerProfile  HirerProfile?
-  reviews       Review[]
+  reviews       Review[]  
   buyerOrders   Order[]        @relation("BuyerOrders")
 }
 
@@ -65,13 +65,13 @@ model ArtistProfile {
   skills               String[]
   portfolio            String[] // URLs to images
   rating               Float    @default(0)
-  reviewCount          Int      @default(0)
+  reviewCount          Int      @default(0) 
   totalEarnings        Decimal  @default(0) @db.Decimal(10, 2)
   totalCompletedOrders Int      @default(0)
   isVerified           Boolean  @default(false)
   verificationDate     DateTime?
   location             String?
-  city                 String?
+  city                 String? 
   languages            String[]
   hourlyRate           Decimal? @db.Decimal(10, 2)
   minimumPrice         Decimal  @default(0) @db.Decimal(10, 2)
@@ -154,6 +154,11 @@ model Order {
   deliveredAt DateTime?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([eventId])
+  @@index([status])
 }
 
 model Review {

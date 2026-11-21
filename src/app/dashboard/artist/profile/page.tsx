@@ -1,4 +1,3 @@
-import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { prisma } from "@/src/lib/prisma";
 import { DashboardLayout } from "@/src/components/dashboard/dashboard-layout";
@@ -6,17 +5,11 @@ import Image from "next/image";
 import { Mail, User, Star, Music2, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import EditProfileModal from "./EditProfileModal";
+import { getAuthUser, getClerkUser } from "@/src/lib/auth";
 
 export default async function ArtistProfilePage() {
-  const user = await currentUser();
-  if (!user) redirect("/sign-in");
-
-  const dbUser = await prisma.user.findUnique({
-    where: { clerkId: user.id },
-    include: { artistProfile: true },
-  });
-
-  if (!dbUser?.artistProfile) redirect("/onboarding");
+  const [{ dbUser }, user] = await Promise.all([getAuthUser(), getClerkUser()]);
+  if (!user || !dbUser?.artistProfile) redirect("/onboarding");
 
   const profile = dbUser.artistProfile;
 

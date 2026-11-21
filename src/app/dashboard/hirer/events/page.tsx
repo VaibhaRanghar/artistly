@@ -1,17 +1,17 @@
-import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { prisma } from "@/src/lib/prisma";
 import { DashboardLayout } from "@/src/components/dashboard/dashboard-layout";
 import { Calendar, MapPin, DollarSign } from "lucide-react";
 import EventCreateModal from "./EventCreateModal";
 import EventManageCard from "./EventManageCard";
+import { getAuthUser } from "@/src/lib/auth";
 
 export default async function HirerEventsPage() {
-  const user = await currentUser();
-  if (!user) redirect("/sign-in");
+  const { dbUser: baseUser } = await getAuthUser();
+  if (!baseUser?.hirerProfile) redirect("/onboarding");
 
   const dbUser = await prisma.user.findUnique({
-    where: { clerkId: user.id },
+    where: { id: baseUser.id },
     include: {
       hirerProfile: {
         include: {

@@ -10,31 +10,28 @@ import { ShoppingBag, Search, Clock } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import Link from "next/link";
 import { prisma } from "@/src/lib/prisma";
-import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { CreateReview } from "@/src/components/dashboard/create-review";
 import { Badge } from "@/src/components/ui/badge";
 import HirerOrderActions from "./HirerOrderActions";
+import { getAuthUser } from "@/src/lib/auth";
 
 export default async function HirerOrdersPage() {
-  const user = await currentUser();
-  if (!user) redirect("/sign-in");
-
-  const dbUser = await prisma.user.findUnique({
-    where: { clerkId: user.id },
-  });
-
+  const { dbUser } = await getAuthUser();
   if (!dbUser) redirect("/onboarding");
 
   const orders = await prisma.order.findMany({
     where: { buyerId: dbUser.id },
     include: {
       service: {
-        include: {
-          artist: { include: { user: true } },
+        select: {
+          title: true,
+          artist: {
+            select: { user: { select: { fullName: true } } },
+          },
         },
       },
-      event: true,
+      event: { select: { title: true } },
     },
     orderBy: { createdAt: "desc" },
   });

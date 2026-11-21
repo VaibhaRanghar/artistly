@@ -2,24 +2,19 @@ import { prisma } from "@/src/lib/prisma";
 import { DashboardLayout } from "@/src/components/dashboard/dashboard-layout";
 import { Calendar, MapPin, DollarSign, ArrowRight, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
-import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import ExpressInterestModal from "./ExpressInterestModal";
+import { getAuthUser } from "@/src/lib/auth";
 
 export default async function ArtistEventsPage() {
-  const user = await currentUser();
-  if (!user) redirect("/sign-in");
-
-  const dbUser = await prisma.user.findUnique({
-    where: { clerkId: user.id },
-    include: {
-      artistProfile: {
-        include: { services: true }
-      }
-    }
-  });
-
+  const { dbUser } = await getAuthUser();
   if (!dbUser?.artistProfile) redirect("/onboarding");
+
+  // Re-fetch with services included for this page
+  const fullProfile = await prisma.artistProfile.findUnique({
+    where: { id: dbUser.artistProfile.id },
+    include: { services: true },
+  });
 
   // Fetch all events from hirers as requested
   const events = await prisma.event.findMany({
@@ -32,12 +27,12 @@ export default async function ArtistEventsPage() {
 
   // Check which events this artist has already applied to
   const appliedOrders = await prisma.order.findMany({
-    where: { sellerId: dbUser.id, eventId: { not: null } },
+    where: { sellerId: dbUser.artistProfile.id, eventId: { not: null } },
     select: { eventId: true }
   });
   const appliedEventIds = new Set(appliedOrders.map(o => o.eventId));
 
-  const artistServices = dbUser.artistProfile.services.map(s => ({
+  const artistServices = (fullProfile?.services || []).map(s => ({
     id: s.id,
     title: s.title,
     price: Number(s.price),

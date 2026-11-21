@@ -13,6 +13,9 @@ import {
 } from "lucide-react";
 import { BookNowModal } from "@/src/components/book-now-modal";
 
+// Cache individual artist pages for 60 seconds
+export const revalidate = 60;
+
 interface Props {
   params: Promise<{ id: string }>;
 }

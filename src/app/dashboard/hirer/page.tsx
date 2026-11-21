@@ -12,31 +12,23 @@ import {
   Search,
   Calendar,
 } from "lucide-react";
-import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/src/lib/prisma";
 import { redirect } from "next/navigation";
+import { getAuthUser } from "@/src/lib/auth";
 
 export default async function HirerDashboard() {
-  const user = await currentUser();
-  if (!user) redirect("/sign-in");
+  const { dbUser: baseUser } = await getAuthUser();
+  if (!baseUser?.hirerProfile) redirect("/onboarding");
 
   const dbUser = await prisma.user.findUnique({
-    where: { clerkId: user.id },
+    where: { id: baseUser.id },
     include: {
       hirerProfile: {
         include: {
-          _count: {
-            select: {
-              events: true,
-            },
-          },
+          _count: { select: { events: true } },
         },
       },
-      _count: {
-        select: {
-          buyerOrders: true,
-        },
-      },
+      _count: { select: { buyerOrders: true } },
     },
   });
 
@@ -44,19 +36,16 @@ export default async function HirerDashboard() {
     redirect("/onboarding");
   }
 
-  // Calculate real spent from COMPLETED orders
-  const spentOrders = await prisma.order.findMany({
+  // Use aggregate instead of findMany + reduce — runs in DB, not in JS
+  const spentResult = await prisma.order.aggregate({
     where: {
       buyerId: dbUser.id,
       status: "COMPLETED",
     },
-    select: { amount: true },
+    _sum: { amount: true },
   });
 
-  const totalSpent = spentOrders.reduce(
-    (sum, order) => sum + Number(order.amount),
-    0,
-  );
+  const totalSpent = Number(spentResult._sum.amount) || 0;
 
   const stats = {
     orders: dbUser._count.buyerOrders,

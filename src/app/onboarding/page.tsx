@@ -156,7 +156,6 @@ export default function OnboardingPage() {
     if (validateStep(currentStep)) {
       try {
         const cityFromLocation = formData.location.split(",")[0].trim();
-        
         // Use Server Action for persistence
         await onboardUser({
            role: formData.role,
@@ -177,9 +176,7 @@ export default function OnboardingPage() {
         
         setIsSubmitted(true);
         setTimeout(() => {
-          // Use window.location.href for a full reload to ensure the session token is renewed
-          // and the middleware can see the updated role.
-          window.location.href = "/dashboard";
+          router.push("/dashboard");
         }, 2000);
       } catch (error) {
         console.error("Onboarding failed", error);
